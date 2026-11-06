@@ -148,7 +148,7 @@ def test_voice_lead_candidate_is_reviewed_before_crm(env,monkeypatch):
         proposal=con.execute("SELECT id,details_ciphertext FROM phone_lead_proposals WHERE call_id=?",
                              (callid,)).fetchone()
     assert proposal is not None
-    assert b"استعلام" not in bytes(proposal["details_ciphertext"])
+    assert "استعلام".encode("utf-8") not in bytes(proposal["details_ciphertext"])
     result=client.get("/api/voice/proposals/"+str(proposal["id"]))
     assert result.status_code==200
     assert result.json()["phone"]=="+989121112233"
