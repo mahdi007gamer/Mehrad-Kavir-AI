@@ -57,6 +57,12 @@ CREATE TABLE IF NOT EXISTS lead_events (
  old_stage TEXT, new_stage TEXT NOT NULL, actor INTEGER REFERENCES users(id),
  created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS provider_checks (
+ provider TEXT PRIMARY KEY,
+ status TEXT NOT NULL CHECK(status IN ('ok','failed')),
+ label TEXT,
+ checked_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS phone_calls (
  id INTEGER PRIMARY KEY,
  provider TEXT NOT NULL CHECK(provider IN ('twilio')),
