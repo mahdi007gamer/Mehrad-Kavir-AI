@@ -186,6 +186,15 @@
   $("#knowledgeForm").addEventListener("submit",ev=>{ev.preventDefault();submitForm(ev.target,"/api/knowledge","سند پیشنهادی ثبت شد.");});
   $("#ruleForm").addEventListener("submit",ev=>{ev.preventDefault();submitForm(ev.target,"/api/rules","قانون پیشنهادی ثبت شد.");});
   $("#scenarioForm").addEventListener("submit",async ev=>{ev.preventDefault();const form=ev.target; const btn=form.querySelector("[type=submit]");btn.disabled=true;txt("#scenarioOutput","در حال پردازش توسط موتور محتوا…");try{const r=await api("/api/scenarios",{method:"POST",body:getForm(form)});lastScenario=r.body;txt("#scenarioOutput",r.body);$("#scenarioOutput").classList.remove("empty");$("#copyScenario").disabled=false;notify(r.generated_by==="openai"?"سناریو تولید شد.":"قالب آزمایشی ساخته شد؛ اتصال مدل را بررسی کنید.");await scenarios();}catch(err){notify(err.message,true);}finally{btn.disabled=false;}});
+  $("#passwordForm").addEventListener("submit",async ev=>{
+    ev.preventDefault();
+    const form=ev.target, btn=form.querySelector("[type=submit]");
+    btn.disabled=true;
+    try{
+      const result=await api("/api/account/password",{method:"POST",body:getForm(form)});
+      if(result.relogin_required){csrf="";user=null;form.reset();showLogin();notify("رمز تغییر کرد. همه نشست‌ها بسته شدند؛ دوباره وارد شوید.");}
+    }catch(err){notify(err.message,true);}finally{btn.disabled=false;}
+  });
   $("#copyScenario").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(lastScenario);notify("متن سناریو کپی شد");}catch{notify("کپی امکان‌پذیر نیست",true);}});
   function tick(){txt("#clock",new Intl.DateTimeFormat("fa-IR",{weekday:"short",day:"numeric",month:"short"}).format(new Date()));}
   tick();setInterval(tick,60_000);
