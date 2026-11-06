@@ -39,6 +39,7 @@
         <button class="nav-link" data-page="inbox"><span>✉</span> صندوق هوشمند <em id="navPending">0</em></button>
         <button class="nav-link" data-page="insights"><span>▤</span> تحلیل پیج</button>
         <button class="nav-link" data-page="crm"><span>◧</span> مدیریت استعلام‌ها</button>
+        <button class="nav-link" data-page="phone"><span>☎</span> منشی تلفنی AI</button>
         <button class="nav-link" data-page="automation"><span>⚙</span> پاسخ‌های خودکار</button>
         <button class="nav-link" data-page="knowledge"><span>▦</span> دانش برند</button>
         <button class="nav-link" data-page="memory"><span>◇</span> حافظه و یادگیری</button>
@@ -162,6 +163,36 @@
           </div>
         </div>
       </section>
+      <section class="page" id="page-phone">
+        <div class="page-head"><div><span class="eyebrow">VOICE AI · HUMAN CONTROL</span><h1>منشی هوشمند تلفنی<span class="accent">.</span></h1><p>مکالمه فارسی با Gemini Live، ثبت تماس و بررسی اطلاعات مشتریان در یک مسیر کنترل‌شده.</p></div><button class="btn ghost" id="phoneRefreshBtn" type="button">↻ تازه‌سازی تماس‌ها</button></div>
+        <div class="panel">
+          <div class="panel-title"><h3>وضعیت سامانه تماس</h3><span class="chip">PILOT · نیازمند شماره/خط واقعی</span></div>
+          <div id="phoneStatus" class="notice">در حال بررسی اتصال سرویس تلفن و Gemini Live...</div>
+          <p class="muted">برای دریافت تماس واقعی، یک شماره دارای دسترسی به Webhook و Media Streams لازم است. راهکار SIP/Asterisk برای خطوط شرکت نیازمند اتصال و پیکربندی مرکز تلفن است.</p>
+        </div>
+        <div class="columns">
+          <div class="panel">
+            <h3>تست صدای فارسی گوگل</h3>
+            <p class="muted">این تست فقط متن واردشده را به صدا تبدیل می‌کند و هیچ تماسی برقرار نخواهد کرد.</p>
+            <form class="stack" id="voicePreviewForm">
+              <label>متن آزمایشی</label>
+              <textarea name="text" rows="4" required minlength="2" maxlength="600">سلام، به یکتا فولاد مهراد کویر خوش آمدید. من دستیار هوش مصنوعی مهراد کویر هستم. لطفاً موضوع تماس و مشخصات پروژه خود را بفرمایید.</textarea>
+              <button class="btn primary" type="submit">▶ ساخت و شنیدن نمونه صدای فارسی</button>
+            </form>
+            <audio id="voicePreviewAudio" controls class="hidden voice-preview-player"></audio>
+            <p id="voicePreviewResult" class="micro">ابتدا کلید Gemini را در بخش امنیت و اتصالات ثبت و آزمایش کنید.</p>
+          </div>
+          <div class="panel">
+            <div class="panel-title"><h3>تماس‌های دریافت‌شده</h3><span class="subtle">بدون ضبط دائمی فایل صوتی</span></div>
+            <div id="phoneCallsList" class="records"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title"><h3>درخواست‌های ثبت‌شده برای تأیید CRM</h3><span class="chip">Consent + Review</span></div>
+          <div id="phoneProposalDetails" class="records"><div class="empty">یک تماس دارای رضایت و پرونده پیشنهادی را انتخاب کنید.</div></div>
+          <div class="notice">مشخصات تماس‌گیرنده و متن مکالمه فقط پس از رضایت صریح در پایگاه داده رمزگذاری می‌شوند. خروجی AI تا تأیید مدیر، یک سرنخ قطعی نیست.</div>
+        </div>
+      </section>
       <section class="page" id="page-automation">
         <div class="page-head"><div><span class="eyebrow">CONTROLLED AUTOMATION</span><h1>پاسخ‌گویی ایمن<span class="accent">.</span></h1><p>قوانین کاملاً محدود برای سلام و احوالپرسی؛ متن آزاد AI بدون تأیید مدیر ارسال نمی‌شود.</p></div></div>
         <div class="columns">
@@ -278,6 +309,43 @@
               <button type="button" class="btn danger" data-disconnect-integration="openai">قطع اتصال</button></div>
               <p id="openaiTestResult" class="micro"></p>
             </form>
+            <form id="geminiConnectForm" class="stack integration-form">
+              <div class="provider-heading"><span class="provider-mark">✦</span><div><b>Google AI / Gemini</b><small>مغز دوم برای متن، سناریو، تحلیل و صدا</small></div></div>
+              <label>Google AI Studio API Key (رمزگذاری‌شده)</label>
+              <input type="password" name="api_key" autocomplete="new-password" maxlength="400" placeholder="کلید گوگل؛ برای حفظ مقدار قبلی خالی بگذارید">
+              <label>مدل متنی Gemini</label>
+              <input type="text" name="text_model" dir="ltr" value="gemini-3.8-flash" maxlength="100" required>
+              <label>مدل مکالمه زنده</label>
+              <input type="text" name="live_model" dir="ltr" value="gemini-3.8-live" maxlength="100" required>
+              <label>مدل تولید صدای فارسی TTS</label>
+              <input type="text" name="tts_model" dir="ltr" value="gemini-3.8-flash-tts" maxlength="100" required>
+              <label>صدای دستیار</label>
+              <select name="voice"><option value="Kore">Kore — رسمی</option><option value="Puck">Puck — پرانرژی</option><option value="Charon">Charon — اطلاع‌رسان</option><option value="Aoede">Aoede — گرم</option><option value="Zephyr">Zephyr — روشن</option><option value="Leda">Leda — جوان</option><option value="Orus">Orus — قاطع</option><option value="Fenrir">Fenrir</option><option value="Alnilam">Alnilam</option><option value="Achernar">Achernar</option></select>
+              <div class="button-row"><button type="submit" class="btn primary">ذخیره اتصال Gemini</button>
+              <button class="btn ghost" type="button" data-test-provider="gemini">تست Google AI</button>
+              <button class="btn danger" type="button" data-disconnect-provider="gemini">قطع اتصال</button></div>
+              <p class="micro" id="geminiTestResult">تست شناسه مدل فقط دسترسی به مدل را بررسی می‌کند؛ تست صوت جداگانه است.</p>
+              <p class="micro"><a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer">دریافت API Key از Google AI Studio</a></p>
+            </form>
+            <div class="integration-form">
+              <div class="provider-heading"><span class="provider-mark">◎</span><div><b>مدل پیش‌فرض محتوای سیستم</b><small>قابل تعویض بین OpenAI و Gemini</small></div></div>
+              <label>انتخاب مغز پیش‌فرض</label>
+              <select id="aiProviderSelect"><option value="openai">OpenAI</option><option value="gemini">Google Gemini</option></select>
+              <button class="btn ghost" type="button" id="saveAiProvider">ثبت انتخاب مدل</button>
+              <div class="micro">در صورت قطع مدل، سیستم بدون ساخت ادعای فنی یا ارسال خودکار وارد حالت پاسخ محافظه‌کارانه می‌شود.</div>
+            </div>
+            <form id="telephonyConnectForm" class="stack integration-form">
+              <div class="provider-heading"><span class="provider-mark">☎</span><div><b>مرکز تلفن / Twilio Media Streams</b><small>ورودی تماس واقعی به Gemini Live — نیازمند شماره فعال</small></div></div>
+              <div class="notice">در نسخه آزمایشی از Twilio استفاده می‌شود. برای اتصال یک شماره ایران باید SIP trunk و مرکز تلفن متناسب با زیرساخت اپراتور بررسی و پیاده‌سازی شود.</div>
+              <label>Twilio Account SID</label><input name="account_sid" dir="ltr" minlength="34" maxlength="34" placeholder="AC..." required>
+              <label>Twilio Auth Token</label><input type="password" name="auth_token" maxlength="300" autocomplete="new-password" placeholder="برای حفظ توکن ثبت‌شده خالی بگذارید">
+              <label>دامنه عمومی امن برای اتصال تماس</label><input name="public_base_url" type="url" maxlength="200" dir="ltr" required placeholder="https://voice.example.com">
+              <label class="checkbox-row"><input type="checkbox" name="enabled" value="true"> فعال‌سازی پذیرش تماس (فقط پس از آزمایش شبکه و مجوزها)</label>
+              <p id="telephonyTestResult" class="micro">Webhook ورودی: /voice/twilio/incoming · رسانه: /voice/twilio/media</p>
+              <div class="button-row"><button type="submit" class="btn primary">ذخیره تنظیمات مرکز تلفن</button>
+              <button class="btn ghost" type="button" data-test-provider="telephony">آزمایش حساب Twilio</button>
+              <button class="btn danger" type="button" data-disconnect-provider="telephony">قطع اتصال</button></div>
+            </form>
             <form id="metaConnectForm" class="stack integration-form">
               <div class="provider-heading"><span class="provider-mark">◎</span><div><b>Instagram / Meta</b><small>اتصال رسمی حساب @mehradkavir</small></div></div>
               <div class="notice">این بخش برای ثبت توکن رسمی Meta است. احراز هویت OAuth خودکار هنوز ساخته نشده و برای دریافت توکن باید از Meta Developer استفاده کنید.</div>
@@ -323,7 +391,7 @@
           </div>
         </div>
       </section>
-      <footer>MEHRAD KAVIR AI · VERSION 0.2.0 · PRIVACY-FIRST · HUMAN APPROVAL REQUIRED</footer>
+      <footer>MEHRAD KAVIR AI · VERSION 0.3.0 · PRIVACY-FIRST · HUMAN APPROVAL REQUIRED</footer>
     </main>
   </div>
 </body>

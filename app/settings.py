@@ -6,6 +6,16 @@ BASE = Path(__file__).resolve().parent.parent
 DB_PATH = os.getenv("DB_PATH", str(BASE / "data" / "mehrad.sqlite3"))
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5-mini")
+AI_PROVIDER = os.getenv("AI_PROVIDER", "openai")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+GEMINI_LIVE_MODEL = os.getenv("GEMINI_LIVE_MODEL", "gemini-3.8-live")
+GEMINI_TTS_MODEL = os.getenv("GEMINI_TTS_MODEL", "gemini-3.8-flash-tts")
+GEMINI_VOICE = os.getenv("GEMINI_VOICE", "Kore")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "")
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
+PHONE_PUBLIC_BASE_URL = os.getenv("PHONE_PUBLIC_BASE_URL", "")
+PHONE_RECEPTION_ENABLED = os.getenv("PHONE_RECEPTION_ENABLED", "false")
 META_APP_SECRET = os.getenv("META_APP_SECRET", "")
 META_VERIFY_TOKEN = os.getenv("META_VERIFY_TOKEN", "")
 META_ACCESS_TOKEN = os.getenv("META_ACCESS_TOKEN", "")
@@ -22,7 +32,7 @@ def meta_ready():
     return all(effective(n) for n in ('META_ACCESS_TOKEN','META_APP_SECRET','META_VERIFY_TOKEN','META_IG_USER_ID'))
 
 def ai_ready():
-    return bool(effective('OPENAI_API_KEY'))
+    return bool(effective('GEMINI_API_KEY') if effective('AI_PROVIDER')=='gemini' else effective('OPENAI_API_KEY'))
 
 def check_startup():
     if not BOOTSTRAP_ADMIN_PASSWORD or len(BOOTSTRAP_ADMIN_PASSWORD) < 16:

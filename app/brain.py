@@ -86,6 +86,9 @@ def retrieve(text, specialty="support"):
 def call_model(instructions, input_text, schema, name):
     if not settings.ai_ready():
         return None
+    if settings.effective('AI_PROVIDER')=='gemini':
+        from .gemini_engine import structured
+        return structured(instructions,input_text,schema,name)
     import httpx
     request = {
         "model": settings.effective('OPENAI_MODEL'),
@@ -166,7 +169,7 @@ def create_reply(message):
         risk = data["risk"]
         if data["needs_human"]:
             risk = "high"
-        return Decision(answer,specialty,risk,citations,"openai")
+        return Decision(answer,specialty,risk,citations,settings.effective("AI_PROVIDER"))
     except (Exception):
         # Do not leak the error or accidentally bypass human approval.
         return Decision("پیام شما نیازمند بررسی کارشناسی است. لطفاً اطلاعات مربوط به پروژه را بفرمایید تا همکاران ما پاسخ دقیق ارائه دهند.",
@@ -196,6 +199,6 @@ def create_scenario(topic,audience,style):
                 + "شات‌لیست:\n" + "\n".join(f"{i+1}. {x}" for i,x in enumerate(data["shots"][:20]))
                 + f'\n\nمتن گویندگی:\n{data["voiceover"]}\n\nکپشن:\n{data["caption"]}\n\n'
                 + f'دعوت به اقدام:\n{data["cta"]}\n\nنیازمند راستی‌آزمایی:\n{data["verification_notes"]}')
-        return body[:12000], "openai"
+        return body[:12000], settings.effective("AI_PROVIDER")
     except Exception:
         return "تولید سناریو با خطا مواجه شد؛ هیچ محتوای ساختگی ساخته نشد. اتصال و تنظیمات مدل را بررسی کنید.", "fallback_ai_error"

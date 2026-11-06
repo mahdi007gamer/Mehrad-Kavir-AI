@@ -3,3 +3,5 @@ uvicorn[standard]>=0.35,<1
 pydantic>=2.8,<3
 httpx>=0.27,<1
 cryptography>=44,<48
+google-genai>=1.55,<4
+twilio>=9,<11

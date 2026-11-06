@@ -57,6 +57,37 @@ CREATE TABLE IF NOT EXISTS lead_events (
  old_stage TEXT, new_stage TEXT NOT NULL, actor INTEGER REFERENCES users(id),
  created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS provider_checks (
+ provider TEXT PRIMARY KEY,
+ status TEXT NOT NULL CHECK(status IN ('ok','failed')),
+ label TEXT,
+ checked_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS phone_calls (
+ id INTEGER PRIMARY KEY,
+ provider TEXT NOT NULL CHECK(provider IN ('twilio')),
+ call_sid TEXT NOT NULL UNIQUE,
+ stream_token_hash TEXT NOT NULL,
+ status TEXT NOT NULL CHECK(status IN ('pending','active','ended','failed','human_requested')),
+ caller_ciphertext BLOB,
+ transcript_ciphertext BLOB,
+ consent_to_contact INTEGER NOT NULL DEFAULT 0,
+ duration_seconds INTEGER,
+ failure_code TEXT,
+ started_at TEXT NOT NULL,
+ finished_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_phone_calls_started ON phone_calls(started_at);
+CREATE TABLE IF NOT EXISTS phone_lead_proposals (
+ id INTEGER PRIMARY KEY,
+ call_id INTEGER NOT NULL UNIQUE REFERENCES phone_calls(id),
+ details_ciphertext BLOB NOT NULL,
+ state TEXT NOT NULL DEFAULT 'pending' CHECK(state IN ('pending','approved','rejected')),
+ approved_by INTEGER REFERENCES users(id),
+ lead_id INTEGER REFERENCES leads(id),
+ created_at TEXT NOT NULL,
+ reviewed_at TEXT
+);
 CREATE TABLE IF NOT EXISTS integration_secrets (
  name TEXT PRIMARY KEY, ciphertext BLOB NOT NULL,
  updated_by INTEGER REFERENCES users(id), updated_at TEXT NOT NULL
