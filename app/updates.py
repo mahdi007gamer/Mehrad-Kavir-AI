@@ -27,7 +27,7 @@ def remote_head(force=False):
             resp=client.get(settings.UPDATE_CHANNEL,headers={
                 "Accept":"application/vnd.github+json",
                 "User-Agent":"MehradKavirAI-UpdateChecker/0.2",
-                "X-GitHub-Api-Version":"2026-03-10"})
+                "X-GitHub-Api-Version":"2022-11-28"})
         resp.raise_for_status()
         data=resp.json()
         sha=data.get("sha","")
