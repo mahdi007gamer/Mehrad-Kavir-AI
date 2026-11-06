@@ -19,10 +19,10 @@ AI_INPUT_LIMIT = 2800
 MAX_KNOWLEDGE_CHARS = 6500
 
 def meta_ready():
-    return bool(META_ACCESS_TOKEN and META_APP_SECRET and META_VERIFY_TOKEN and META_IG_USER_ID)
+    return all(effective(n) for n in ('META_ACCESS_TOKEN','META_APP_SECRET','META_VERIFY_TOKEN','META_IG_USER_ID'))
 
 def ai_ready():
-    return bool(OPENAI_API_KEY)
+    return bool(effective('OPENAI_API_KEY'))
 
 def check_startup():
     if not BOOTSTRAP_ADMIN_PASSWORD or len(BOOTSTRAP_ADMIN_PASSWORD) < 16:
@@ -34,3 +34,15 @@ def check_startup():
 AUTO_REPLY_ENABLED = os.getenv("AUTO_REPLY_ENABLED","false").lower()=="true"
 APP_REVISION = os.getenv("APP_REVISION","unknown")
 UPDATE_CHANNEL = "https://api.github.com/repos/mahdi007gamer/Mehrad-Kavir-AI/commits/main"
+
+
+def effective(name):
+    """Current credential or setting (encrypted vault overrides initial .env).
+
+    Vault errors fail closed. Never expose returned values through HTTP.
+    """
+    from .vault import read
+    saved=read(name)
+    if saved is not None:
+        return saved
+    return getattr(__import__(__name__, fromlist=[name]),name)
