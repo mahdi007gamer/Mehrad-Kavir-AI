@@ -57,6 +57,15 @@ CREATE TABLE IF NOT EXISTS lead_events (
  old_stage TEXT, new_stage TEXT NOT NULL, actor INTEGER REFERENCES users(id),
  created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS integration_secrets (
+ name TEXT PRIMARY KEY, ciphertext BLOB NOT NULL,
+ updated_by INTEGER REFERENCES users(id), updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS integration_checks (
+ provider TEXT PRIMARY KEY CHECK(provider IN ('openai','meta')),
+ status TEXT NOT NULL CHECK(status IN ('ok','failed','never')),
+ account_label TEXT, checked_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS update_requests (
  id INTEGER PRIMARY KEY, target_sha TEXT NOT NULL,
  state TEXT NOT NULL CHECK(state IN ('approved','applying','completed','failed')),
