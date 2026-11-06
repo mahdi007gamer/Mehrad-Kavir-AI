@@ -46,7 +46,7 @@ function Apply-Update($ticket) {
     } else {
       $envText += [Environment]::NewLine + "APP_REVISION=$sha" + [Environment]::NewLine
     }
-    [System.IO.File]::WriteAllText((Join-Path $ProjectRoot ".env"),$envText,[Text.Encoding]::UTF8)
+    [System.IO.File]::WriteAllText((Join-Path $ProjectRoot ".env"),$envText,([System.Text.UTF8Encoding]::new($false)))
     $null = Invoke-Tool "docker" @("compose","up","--build","-d")
     Start-Sleep -Seconds 5
     $health = Invoke-Tool "docker" @("compose","exec","-T","web","python","-m","app.update_ticket","finish",$id,$sha,"completed")
@@ -57,7 +57,7 @@ function Apply-Update($ticket) {
       try { $null = Invoke-Tool "git" @("reset","--hard",$old) } catch {}
     }
     if ($null -ne $originalEnv) {
-      try { [System.IO.File]::WriteAllText((Join-Path $ProjectRoot ".env"),$originalEnv,[Text.Encoding]::UTF8) } catch {}
+      try { [System.IO.File]::WriteAllText((Join-Path $ProjectRoot ".env"),$originalEnv,([System.Text.UTF8Encoding]::new($false))) } catch {}
     }
     try { $null = Invoke-Tool "docker" @("compose","up","--build","-d") } catch {}
     try {
