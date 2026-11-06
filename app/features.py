@@ -69,7 +69,7 @@ class ImportRequest(BaseModel):
 
 @router.post("/api/import/jobs")
 def queue_import(data:ImportRequest,user=Depends(OWNER)):
-    if data.provider.startswith("instagram") and not (settings.META_ACCESS_TOKEN and settings.META_IG_USER_ID):
+    if data.provider.startswith("instagram") and not (settings.effective('META_ACCESS_TOKEN') and settings.effective('META_IG_USER_ID')):
         raise HTTPException(409,"Meta account and token not connected")
     with db.tx() as con:
         pending=con.execute("SELECT id FROM import_jobs WHERE provider=? AND state IN ('queued','processing')",
