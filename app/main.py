@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from . import db, settings
 from .security import COOKIE_NAME, create_session, token_hash, user_for, role_required, verify_password, verify_webhook, hash_password
-from .brain import create_scenario, create_reply
+from .brain import create_scenario, create_reply, propose_feedback_rule
 from .meta import send_reply
 
 log = logging.getLogger("mkai")
@@ -167,6 +167,28 @@ class RuleIn(BaseModel):
     title:str=Field(min_length=4,max_length=150)
     instruction:str=Field(min_length=10,max_length=1500)
     scope:Literal["global","sales","engineering","support","content"]="global"
+
+class FeedbackIn(BaseModel):
+    feedback: str = Field(min_length=12,max_length=1800)
+    scope: Literal["global","sales","engineering","support","content"]="content"
+
+@app.post("/api/feedback/propose")
+def analyze_feedback(data:FeedbackIn,user=Depends(EDITOR)):
+    if not settings.ai_ready():
+        raise HTTPException(409,"Connect OPENAI_API_KEY to analyze feedback; manual rules remain available")
+    try:
+        proposal=propose_feedback_rule(data.feedback,data.scope)
+    except Exception:
+        raise HTTPException(502,"Feedback analysis unavailable; please use manual rule proposal")
+    if proposal["needs_clarification"]:
+        return proposal
+    with db.tx() as con:
+        cur=con.execute(
+            "INSERT INTO rules(title,instruction,scope,status,created_by,created_at) VALUES(?,?,?,'pending',?,?)",
+            (proposal["title"],proposal["instruction"],data.scope,user["id"],db.now()))
+        db.audit(con,user["id"],"ai_feedback_proposed","rules",cur.lastrowid,{"scope":data.scope})
+        return {"needs_clarification":False,"id":cur.lastrowid,"status":"pending",
+                "title":proposal["title"],"instruction":proposal["instruction"]}
 
 @app.get("/api/rules")
 def list_rules(user=Depends(user_for)):
