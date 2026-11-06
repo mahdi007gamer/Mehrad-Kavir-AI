@@ -37,7 +37,9 @@
       <nav id="nav">
         <button class="nav-link active" data-page="dashboard"><span>◈</span> نمای کلی</button>
         <button class="nav-link" data-page="inbox"><span>✉</span> صندوق هوشمند <em id="navPending">0</em></button>
-        <button class="nav-link" data-page="insights"><span>▤</span> تحلیل پیج <em>نقشه راه</em></button>
+        <button class="nav-link" data-page="insights"><span>▤</span> تحلیل پیج</button>
+        <button class="nav-link" data-page="crm"><span>◧</span> مدیریت استعلام‌ها</button>
+        <button class="nav-link" data-page="automation"><span>⚙</span> پاسخ‌های خودکار</button>
         <button class="nav-link" data-page="knowledge"><span>▦</span> دانش برند</button>
         <button class="nav-link" data-page="memory"><span>◇</span> حافظه و یادگیری</button>
         <button class="nav-link" data-page="content"><span>✧</span> استودیو محتوا</button>
@@ -84,17 +86,17 @@
         </div>
       </section>
       <section class="page" id="page-insights">
-        <div class="page-head"><div><span class="eyebrow">GROWTH INTELLIGENCE · ROADMAP</span><h1>تحلیل هوشمند اینستاگرام<span class="accent">.</span></h1><p>ساختار ماژول رشد پیج مهراد کویر — در انتظار اتصال رسمی Insights.</p></div></div>
+        <div class="page-head"><div><span class="eyebrow">GROWTH INTELLIGENCE · ROADMAP</span><h1>تحلیل هوشمند اینستاگرام<span class="accent">.</span></h1><p>نمایش شاخص‌های دریافت‌شده از API رسمی؛ مقدار ناموجود هرگز با صفر جایگزین نمی‌شود.</p></div></div>
         <div class="panel insights-banner">
           <div class="panel-title"><h3>وضعیت اتصال تحلیلی</h3><span class="chip warning">هنوز فعال نشده</span></div>
-          <p id="insightsStatus" class="muted">اتصال رسمی آمار Instagram Insights هنوز پیاده‌سازی نشده است. هیچ عدد فرضی یا ساختگی نشان داده نمی‌شود.</p>
-          <div class="notice">مرحله بعدی: اتصال مجاز به Meta Insights، ذخیره Snapshot های معتبر و نمایش KPI واقعی همراه منبع و زمان آخرین به‌روزرسانی.</div>
+          <p id="insightsStatus" class="muted">برای نمایش آمار معتبر، ابتدا اتصال Meta را در بخش امنیت انجام دهید و سپس دریافت Insights را اجرا کنید.</p>
+          <div class="notice">دریافت اطلاعات از Meta ممکن است برای بعضی شاخص‌ها یا مجوزها ناموفق باشد. داده ناموجود با «—» نمایش داده می‌شود، نه صفر.</div>
         </div>
         <div class="stat-grid">
-          <div class="stat"><div class="stat-icon">◉</div><p>Views</p><strong>—</strong><small>در انتظار داده واقعی</small></div>
-          <div class="stat"><div class="stat-icon">◎</div><p>Reach</p><strong>—</strong><small>در انتظار داده واقعی</small></div>
-          <div class="stat"><div class="stat-icon">✧</div><p>Engagement Rate</p><strong>—</strong><small>محاسبه پس از دریافت Reach معتبر</small></div>
-          <div class="stat"><div class="stat-icon">✉</div><p>سرنخ واجد شرایط</p><strong>—</strong><small>نیازمند اتصال قیف استعلام</small></div>
+          <div class="stat"><div class="stat-icon">◉</div><p>Views</p><strong id="igViews">—</strong><small>آخرین Snapshot معتبر</small></div>
+          <div class="stat"><div class="stat-icon">◎</div><p>Reach</p><strong id="igReach">—</strong><small>آخرین Snapshot معتبر</small></div>
+          <div class="stat"><div class="stat-icon">✧</div><p>Engagement Rate</p><strong id="igEngagement">—</strong><small>در صورت وجود Reach و تعامل</small></div>
+          <div class="stat"><div class="stat-icon">✉</div><p>سرنخ واجد شرایط</p><strong id="igQualifiedLeads">—</strong><small>از CRM واقعی سیستم</small></div>
         </div>
         <div class="columns">
           <div class="panel">
@@ -116,6 +118,11 @@
           <h3>قانون شفافیت داده‌ها</h3>
           <p class="muted">عدد خالی یعنی هنوز داده قابل استناد نداریم؛ صفر یعنی داده واقعی با مقدار صفر دریافت شده است. هر KPI در نسخه عملیاتی باید منبع، زمان دریافت، نوع و وضعیت دسترسی داشته باشد.</p>
         </div>
+        <div class="panel">
+          <div class="panel-title"><h3>پست‌ها و ریلزهای شناسایی‌شده</h3><button class="btn ghost" type="button" data-start-import="instagram_insights">↻ بروزرسانی آمار رسمی</button></div>
+          <p class="micro">ابتدا از «دانش برند» فهرست رسانه‌ها را دریافت کنید؛ سپس دریافت Insights را اجرا کنید. نتایج با زمان ثبت‌شده ذخیره می‌شوند.</p>
+          <div id="igMediaList" class="records"></div>
+        </div>
       </section>
       <section class="page" id="page-inbox">
         <div class="page-head"><div><span class="eyebrow">SMART COMMUNICATION</span><h1>صندوق پیام هوشمند<span class="accent">.</span></h1><p>بررسی پیشنهادها، اصلاح پاسخ و ارسال فقط پس از تأیید.</p></div><button class="btn ghost" id="inboxRefresh">↻ دریافت جدید</button></div>
@@ -131,6 +138,47 @@
             <button class="btn primary" type="submit">ثبت پیام و تولید پیش‌نویس ←</button>
           </form>
           <p class="micro">پردازش پیش‌نویس توسط Worker انجام می‌شود؛ برای مشاهده نتیجه کمی بعد صندوق را تازه‌سازی کنید.</p>
+        </div>
+      </section>
+      <section class="page" id="page-crm">
+        <div class="page-head"><div><span class="eyebrow">SOLAR RFQ PIPELINE</span><h1>مدیریت استعلام‌های سازه<span class="accent">.</span></h1><p>ثبت سرنخ‌های واقعی و ارجاع به کارشناس مهندسی؛ بدون اعلام قیمت یا محاسبات ساختگی.</p></div></div>
+        <div class="columns">
+          <div class="panel">
+            <h3>ثبت درخواست جدید</h3>
+            <form class="stack" id="leadForm">
+              <label>نام متقاضی / پروژه</label><input name="name" minlength="2" maxlength="120" required placeholder="نام مشتری یا نام پروژه">
+              <label>شهر پروژه</label><input name="project_city" maxlength="120" placeholder="مثلاً: قم">
+              <label>ظرفیت نیروگاه (مگاوات)</label><input name="capacity_mw" type="number" min="0" max="100000" step="0.001" placeholder="3">
+              <label>نوع فونداسیون</label><input name="foundation" maxlength="100" placeholder="کوبشی / بتنی / نامشخص">
+              <label>آرایش پنل‌ها</label><input name="panel_layout" maxlength="150" placeholder="مثلاً 2×14 یا نامشخص">
+              <label>تلفن تماس</label><input name="phone" maxlength="60" placeholder="اختیاری">
+              <label>توضیحات</label><textarea name="details" rows="4" maxlength="2500"></textarea>
+              <button class="btn primary" type="submit">ثبت سرنخ فروش</button>
+            </form>
+          </div>
+          <div class="panel">
+            <div class="panel-title"><h3>قیف استعلام و پیگیری</h3><span class="chip">CRM</span></div>
+            <div id="leadsList" class="records"></div>
+          </div>
+        </div>
+      </section>
+      <section class="page" id="page-automation">
+        <div class="page-head"><div><span class="eyebrow">CONTROLLED AUTOMATION</span><h1>پاسخ‌گویی ایمن<span class="accent">.</span></h1><p>قوانین کاملاً محدود برای سلام و احوالپرسی؛ متن آزاد AI بدون تأیید مدیر ارسال نمی‌شود.</p></div></div>
+        <div class="columns">
+          <div class="panel">
+            <h3>ساخت قانون پاسخ ثابت</h3>
+            <div id="autoPolicyStatus" class="notice">در حال بررسی کلید توقف اضطراری سرور...</div>
+            <form id="autoPolicyForm" class="stack">
+              <label>عبارت دقیق</label>
+              <select name="keyword"><option value="سلام">سلام</option><option value="درود">درود</option><option value="وقت بخیر">وقت بخیر</option><option value="صبح بخیر">صبح بخیر</option><option value="شب بخیر">شب بخیر</option></select>
+              <label>پاسخ رسمی تأییدشده</label>
+              <textarea name="template" minlength="15" maxlength="320" required rows="4" placeholder="سلام، به مهراد کویر خوش آمدید. برای مشاوره سازه خورشیدی، مشخصات پروژه را بفرمایید."></textarea>
+              <button type="submit" class="btn primary">ثبت قانون (در ابتدا خاموش)</button>
+            </form>
+          </div>
+          <div class="panel"><h3>قوانین اتوماسیون</h3><div id="autoPoliciesList" class="records"></div>
+            <div class="notice">بدون اتصال تأییدشده Meta، فعال‌سازی سمت سرور و آزمون عملیاتی، ارسال خودکار اجرا نمی‌شود.</div>
+          </div>
         </div>
       </section>
       <section class="page" id="page-knowledge">
