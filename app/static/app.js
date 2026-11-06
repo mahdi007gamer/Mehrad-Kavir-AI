@@ -174,18 +174,72 @@
     }
     await loadThread(selectedThread);
   }
+  const knowledgeCategoryLabels={
+    brand:"هویت برند",engineering:"مهندسی/محصول",sales:"فروش/استعلام",
+    faq:"سؤالات متداول",policy:"سیاست و امنیت",content:"محتوا",other:"سایر"
+  };
+  const evidenceLabels={
+    owner_confirmed:"اطلاعات اعلام‌شده توسط مدیر",
+    operating_guideline:"راهنمای عملیاتی",
+    engineering_guidance:"راهنمای عمومی فنی؛ نه طراحی نهایی",
+    owner_claim_needs_proof:"ادعای نیازمند سند و بررسی مدیر",
+    live_source_required:"نیازمند منبع زنده و قابل‌تأیید"
+  };
   function record(obj,type) {
-    const title=e(obj.title);
-    const body=e(type==="rule"?obj.instruction:obj.body);
+    const title=e(obj.title),textBody=String(type==="rule"?obj.instruction:obj.body);
     const state=obj.status;
-    const button=(state==="pending"&&user?.role==="owner")?'<div class="record-actions"><button class="btn small primary" data-review="'+type+':'+Number(obj.id)+':approved">تأیید</button><button class="btn small danger" data-review="'+type+':'+Number(obj.id)+':rejected">رد</button></div>':(type==="knowledge"&&state==="approved"?'<div class="record-actions"><button class="btn small ghost" data-edit-knowledge="'+Number(obj.id)+'">ویرایش سند / نسخه '+Number(obj.version||1)+'</button></div>':"");
-    return '<div class="record"><div class="record-head"><h4>'+title+'</h4>'+chip(statusText[state]||state,state==="approved"?"success":state==="pending"?"warning":"danger")+'</div><p>'+body+'</p><small>'+e(type==="rule"?obj.scope:obj.category)+' · '+e(fmt(obj.created_at))+'</small>'+button+'</div>';
+    const button=(state==="pending"&&user?.role==="owner")?
+      '<div class="record-actions"><button class="btn small primary" data-review="'+type+':'+Number(obj.id)+':approved">تأیید</button><button class="btn small danger" data-review="'+type+':'+Number(obj.id)+':rejected">رد</button></div>':
+      (type==="knowledge"&&state==="approved"?
+       '<div class="record-actions"><button class="btn small ghost" data-edit-knowledge="'+Number(obj.id)+'">ویرایش سند / نسخه '+Number(obj.version||1)+'</button></div>':"");
+    if(type!=="knowledge")
+      return '<div class="record"><div class="record-head"><h4>'+title+'</h4>'+
+        chip(statusText[state]||state,state==="approved"?"success":state==="pending"?"warning":"danger")+
+        '</div><p>'+e(textBody)+'</p><small>'+e(obj.scope)+' · '+e(fmt(obj.created_at))+'</small>'+button+'</div>';
+    const origin=obj.evidence_class?e(evidenceLabels[obj.evidence_class]||obj.evidence_class):
+      obj.source_type==="manual"?"سند ثبت‌شده دستی":
+      obj.source_type==="website"?"سایت / پس از تأیید مدیر":
+      obj.source_type==="instagram"?"اینستاگرام / پس از تأیید مدیر":"سند اولیه سیستم";
+    const label=e(knowledgeCategoryLabels[obj.category]||obj.category);
+    const preview=textBody.length>325?
+      '<p>'+e(textBody.slice(0,325))+'…</p><details class="knowledge-expand"><summary>مشاهده متن کامل سند</summary><p>'+e(textBody)+'</p></details>':
+      '<p>'+e(textBody)+'</p>';
+    const edited=obj.edited_since_pack?
+      '<small class="knowledge-edited">نسخه اولیه توسط مدیر ویرایش شده</small>':"";
+    return '<div class="record knowledge-record"><div class="record-head"><h4>'+title+'</h4>'+
+      chip(statusText[state]||state,state==="approved"?"success":state==="pending"?"warning":"danger")+
+      '</div><div class="knowledge-tags"><small>'+label+'</small><small>'+origin+'</small>'+
+      (obj.seed_key?'<small>بسته دانش '+e(obj.pack_version||"")+'</small>':"")+'</div>'+
+      preview+'<small>نسخه '+Number(obj.version||1)+' · '+e(fmt(obj.created_at))+'</small>'+
+      edited+button+'</div>';
+  }
+  function renderKnowledgeList() {
+    const items=window.__knowledgeItems||[];
+    const q=String($("#knowledgeSearch")?.value||"").trim().toLowerCase().replaceAll("ي","ی").replaceAll("ك","ک");
+    const category=$("#knowledgeCategoryFilter")?.value||"all";
+    const status=$("#knowledgeStatusFilter")?.value||"all";
+    const shown=items.filter(d=>
+      (category==="all"||d.category===category)&&
+      (status==="all"||d.status===status)&&
+      (!q||(d.title+" "+d.body+" "+(knowledgeCategoryLabels[d.category]||"")).toLowerCase().replaceAll("ي","ی").replaceAll("ك","ک").includes(q))
+    );
+    txt("#knowledgeCount",shown.length+" از "+items.length+" سند");
+    const approved=items.filter(d=>d.status==="approved").length;
+    const pending=items.filter(d=>d.status==="pending").length;
+    const edits=items.filter(d=>d.edited_since_pack).length;
+    $("#knowledgeStats").innerHTML=
+      '<span class="knowledge-stat"><strong>'+approved+'</strong> تأییدشده</span>'+
+      '<span class="knowledge-stat"><strong>'+pending+'</strong> نیازمند بررسی</span>'+
+      '<span class="knowledge-stat"><strong>'+edits+'</strong> ویرایش‌شده</span>';
+    $("#knowledgeList").innerHTML=shown.length?
+      shown.map(x=>record(x,"knowledge")).join(""):
+      feedEmpty("سندی با این فیلتر پیدا نشد. موضوع یا وضعیت را تغییر دهید.");
   }
   async function knowledge() {
     const items=await api("/api/knowledge");
     window.__knowledgeCache=Object.fromEntries(items.map(x=>[x.id,x]));
-    txt("#knowledgeCount",items.length+" سند");
-    $("#knowledgeList").innerHTML=items.length?items.map(x=>record(x,"knowledge")).join(""):feedEmpty("هیچ سندی ثبت نشده است.");
+    window.__knowledgeItems=items;
+    renderKnowledgeList();
     await refreshImports();
   }
 
@@ -536,6 +590,9 @@
       notify("ویرایش در صف تأیید مدیر ثبت شد.");await knowledge();await loadKnowledgeHistory(id);
     }catch(err){notify(err.message,true);}finally{btn.disabled=false;}
   });
+  $("#knowledgeSearch").addEventListener("input",renderKnowledgeList);
+  $("#knowledgeCategoryFilter").addEventListener("change",renderKnowledgeList);
+  $("#knowledgeStatusFilter").addEventListener("change",renderKnowledgeList);
   $("#knowledgeForm").addEventListener("submit",ev=>{ev.preventDefault();submitForm(ev.target,"/api/knowledge","سند پیشنهادی ثبت شد.");});
   $("#feedbackForm").addEventListener("submit",async ev=>{
     ev.preventDefault();
