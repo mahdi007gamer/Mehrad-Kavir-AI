@@ -49,7 +49,7 @@
     activePage=page;
     $$(".page").forEach(x=>x.classList.toggle("active",x.id==="page-"+page));
     $$(".nav-link").forEach(x=>x.classList.toggle("active",x.dataset.page===page));
-    txt("#currentPageName", ({dashboard:"نمای کلی",inbox:"صندوق پیام",knowledge:"دانش برند",memory:"حافظه و یادگیری",content:"استودیو محتوا",security:"امنیت و اتصالات"})[page]);
+    txt("#currentPageName", ({dashboard:"نمای کلی",inbox:"صندوق پیام",insights:"تحلیل پیج",knowledge:"دانش برند",memory:"حافظه و یادگیری",content:"استودیو محتوا",security:"امنیت و اتصالات"})[page]);
     window.scrollTo({top:0,behavior:"smooth"});
     refreshCurrent();
   }
@@ -57,6 +57,7 @@
     try {
       if (activePage === "dashboard") await dashboard();
       else if (activePage === "inbox") await inbox();
+      else if (activePage === "insights") await insights();
       else if (activePage === "knowledge") await knowledge();
       else if (activePage === "memory") await rules();
       else if (activePage === "content") await scenarios();
@@ -77,6 +78,13 @@
     $("#activityFeed").innerHTML=d.latest_audit.length?d.latest_audit.map(x=>'<div class="activity"><div class="circle">◎</div><div class="details"><b>'+e(names[x.action]||x.action)+'</b><small>'+e(x.entity)+'</small></div><small class="subtle">'+e(fmt(x.created_at))+'</small></div>').join(""):feedEmpty("هنوز رویدادی ثبت نشده است.");
   }
   function chip(label,kind="") {return '<span class="chip '+e(kind)+'">'+e(label)+'</span>';}
+  async function insights() {
+    // There is intentionally no simulated metric source. This view does not claim real Insights integration.
+    const data = await api("/api/dashboard");
+    txt("#insightsStatus", data.integration.meta
+      ? "اتصال پایه Meta در تنظیمات ثبت شده، اما مجوز و همگام‌سازی Instagram Insights هنوز پیاده‌سازی نشده است."
+      : "اتصال Meta هنوز آماده نیست و ماژول جمع‌آوری Instagram Insights نیز در نقشه توسعه قرار دارد.");
+  }
   async function inbox() {
     const threads=await api("/api/threads");
     const list=$("#threadsList");
