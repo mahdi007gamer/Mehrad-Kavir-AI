@@ -148,7 +148,7 @@ def _explicit_contact_consent(parts):
     to a project question is insufficient.
     """
     affirmative=("بله","آره","اره","حتما","حتماً","موافقم","اجازه میدم","اجازه می‌دم","مشکلی نیست")
-    negative=("نه","خیر","نمی‌خوام","نمیدم","نمی‌دم","رضایت ندارم","ثبت نکن","نیست")
+    negative=("نه","خیر","نمی‌خوام","نمیدم","نمی‌دم","رضایت ندارم","ثبت نکن")
     for i,(speaker,text) in enumerate(parts):
         if speaker!="assistant" or "ثبت" not in text or not any(
             word in text for word in ("اجازه","رضایت","موافق","پیگیری")):
