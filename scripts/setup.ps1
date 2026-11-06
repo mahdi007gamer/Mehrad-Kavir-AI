@@ -4,7 +4,10 @@
  Requires Windows PowerShell 5.1+, Docker Desktop and Docker Compose v2.
 #>
 [CmdletBinding()]
-param([switch]$SkipUpdateAgent)
+param(
+    [switch]$SkipUpdateAgent,
+    [switch]$SkipDocker
+)
 
 $ErrorActionPreference = "Stop"
 $ProjectRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
@@ -30,7 +33,7 @@ function Add-EnvLine([string]$Contents, [string]$Line) {
     $key = $Line.Substring(0, $Line.IndexOf("="))
     $pattern = "(?m)^" + [regex]::Escape($key) + "="
     if ($Contents -match $pattern) { return $Contents }
-    if ($Contents.Length -gt 0 -and -not $Contents.EndsWith([char]10)) {
+    if ($Contents.Length -gt 0 -and -not $Contents[$Contents.Length - 1] -eq [char]10) {
         $Contents += [Environment]::NewLine
     }
     return $Contents + $Line + [Environment]::NewLine
@@ -106,26 +109,29 @@ if ($contents -match '(?m)^APP_REVISION=') {
 }
 if ($contents -cne $original) { Write-PrivateText -Path $EnvPath -Contents $contents }
 
-if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-    throw "Docker Desktop is missing or docker.exe is not on PATH."
+if (-not $SkipDocker) {
+    if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+        throw "Docker Desktop is missing or docker.exe is not on PATH."
+    }
+    & docker compose version
+    if ($LASTEXITCODE -ne 0) {
+        throw "Docker Compose v2 is required. Launch Docker Desktop and retry."
+    }
+    & docker info *> $null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Docker Desktop's Linux engine is not running. Open Docker Desktop first."
+    }
+    Write-Host "Building and starting Mehrad Kavir AI..." -ForegroundColor Cyan
+    & docker compose up --build -d
+    if ($LASTEXITCODE -ne 0) {
+        throw "Docker build/start failed. Review the Docker error shown above."
+    }
+    Write-Host "Dashboard: http://127.0.0.1:8787" -ForegroundColor Green
+    Write-Host "Connect Google, OpenAI and Instagram from Security & Connections." -ForegroundColor Cyan
+    
 }
-& docker compose version
-if ($LASTEXITCODE -ne 0) {
-    throw "Docker Compose v2 is required. Launch Docker Desktop and retry."
-}
-& docker info *> $null
-if ($LASTEXITCODE -ne 0) {
-    throw "Docker Desktop's Linux engine is not running. Open Docker Desktop first."
-}
-Write-Host "Building and starting Mehrad Kavir AI..." -ForegroundColor Cyan
-& docker compose up --build -d
-if ($LASTEXITCODE -ne 0) {
-    throw "Docker build/start failed. Review the Docker error shown above."
-}
-Write-Host "Dashboard: http://127.0.0.1:8787" -ForegroundColor Green
-Write-Host "Connect Google, OpenAI and Instagram from Security & Connections." -ForegroundColor Cyan
 
-if (-not $SkipUpdateAgent) {
+if (-not $SkipUpdateAgent -and -not $SkipDocker) {
     $agent = Join-Path $PSScriptRoot "host-update-agent.ps1"
     if (Test-Path -LiteralPath $agent) {
         try {
