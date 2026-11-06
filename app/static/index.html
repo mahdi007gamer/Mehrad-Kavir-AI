@@ -233,10 +233,22 @@
               <input type="password" name="new_password" minlength="16" maxlength="200" autocomplete="new-password" required>
               <button type="submit" class="btn ghost">تغییر رمز و خروج از تمام نشست‌ها</button>
             </form></div>
-          <div class="panel"><h3>ردپای حسابرسی</h3><div id="auditRecords" class="records"></div></div>
+          <div class="security-side">
+            <div class="panel">
+              <div class="panel-title"><h3>به‌روزرسانی هوشمند سیستم</h3><span class="chip">GitHub Official</span></div>
+              <p class="muted">بررسی نسخه رسمی بدون نصب خودکار؛ اجرا فقط بعد از تأیید مدیر اصلی.</p>
+              <div id="updateStatus" class="notice">وضعیت بروزرسانی در حال بررسی است...</div>
+              <div class="button-row"><button id="updateCheckBtn" class="btn ghost" type="button">↻ بررسی آپدیت جدید</button>
+              <button id="updateApproveBtn" class="btn primary" type="button" disabled>تأیید و اجرای نسخه جدید</button></div>
+              <div class="micro">برای اجرای خودکار روی ویندوز، نصب‌کننده باید عامل محلی آپدیت را راه‌اندازی کرده باشد؛ برنامه هیچ دسترسی مستقیم به Docker Socket ندارد.</div>
+            </div>
+            <div class="panel">
+              <h3>ردپای حسابرسی</h3><div id="auditRecords" class="records"></div>
+            </div>
+          </div>
         </div>
       </section>
-      <footer>MEHRAD KAVIR AI · VERSION 0.1.0 · PRIVACY-FIRST · HUMAN APPROVAL REQUIRED</footer>
+      <footer>MEHRAD KAVIR AI · VERSION 0.2.0 · PRIVACY-FIRST · HUMAN APPROVAL REQUIRED</footer>
     </main>
   </div>
 </body>
