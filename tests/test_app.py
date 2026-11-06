@@ -39,7 +39,7 @@ def test_health_and_seed(client):
     assert client.get("/api/me").status_code==401
     auth(client)
     d=client.get("/api/dashboard").json()
-    assert d["approved_knowledge"]==2
+    assert d["approved_knowledge"]>=34  # Original 2 plus curated approved knowledge
     assert d["integration"]["auto_send"] is False
     assert client.get("/api/settings").json()["instagram_ready"] is False
 

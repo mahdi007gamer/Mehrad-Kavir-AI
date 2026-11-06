@@ -57,6 +57,15 @@ CREATE TABLE IF NOT EXISTS lead_events (
  old_stage TEXT, new_stage TEXT NOT NULL, actor INTEGER REFERENCES users(id),
  created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS brand_knowledge_pack_entries (
+ seed_key TEXT PRIMARY KEY,
+ knowledge_id INTEGER NOT NULL UNIQUE REFERENCES knowledge(id),
+ evidence_class TEXT NOT NULL,
+ pack_version TEXT NOT NULL,
+ source_fingerprint TEXT NOT NULL,
+ created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_brand_pack_evidence ON brand_knowledge_pack_entries(evidence_class);
 CREATE TABLE IF NOT EXISTS provider_checks (
  provider TEXT PRIMARY KEY,
  status TEXT NOT NULL CHECK(status IN ('ok','failed')),

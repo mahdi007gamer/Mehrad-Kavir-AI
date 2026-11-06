@@ -221,7 +221,27 @@
             <label>محتوای مستند</label><textarea name="body" rows="8" minlength="20" maxlength="10000" required placeholder="فقط اطلاعات معتبر و قابل بررسی را درج کنید."></textarea>
             <button class="btn primary" type="submit">ثبت برای تأیید مدیر</button></form>
           </div>
-          <div class="panel"><div class="panel-title"><h3>اسناد ثبت‌شده</h3><small id="knowledgeCount">—</small></div><div id="knowledgeList" class="records"></div></div>
+          <div class="panel">
+            <div class="panel-title"><h3>کتابخانه اسناد برند</h3><small id="knowledgeCount">—</small></div>
+            <p class="muted">اسناد تأییدشده در پاسخ‌های AI استفاده می‌شوند. اسناد نیازمند بررسی تا تأیید مالک وارد حافظه فعال نمی‌شوند.</p>
+            <div class="knowledge-stats" id="knowledgeStats"></div>
+            <div class="knowledge-filters">
+              <input type="search" id="knowledgeSearch" placeholder="جست‌وجو در عنوان، متن و موضوع سند..." aria-label="جست‌وجوی اسناد برند">
+              <select id="knowledgeCategoryFilter" aria-label="فیلتر دسته اسناد">
+                <option value="all">همه موضوعات</option>
+                <option value="brand">هویت برند</option><option value="engineering">مهندسی و محصول</option>
+                <option value="sales">فروش و استعلام</option><option value="faq">پرسش‌های متداول</option>
+                <option value="policy">سیاست‌ها و امنیت</option><option value="content">محتوا و اینستاگرام</option>
+                <option value="other">سایر</option>
+              </select>
+              <select id="knowledgeStatusFilter" aria-label="فیلتر وضعیت اسناد">
+                <option value="all">همه وضعیت‌ها</option><option value="approved">تأییدشده</option>
+                <option value="pending">نیازمند بررسی</option><option value="rejected">ردشده</option>
+              </select>
+            </div>
+            <div class="notice">مبنای بسته اولیه: اطلاعات تأییدشده در گفتگوهای پروژه و راهنماهای عملیاتی. استخراج زنده سایت/اینستاگرام هنوز نیازمند اتصال و بررسی است. منشأ هر سند در کارت آن مشخص شده.</div>
+            <div id="knowledgeList" class="records" aria-live="polite"></div>
+          </div>
         </div>
         <div class="columns">
           <div class="panel">

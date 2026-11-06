@@ -146,3 +146,6 @@ def init_db():
                     "INSERT INTO knowledge(title,body,category,status,created_at) VALUES(?,?,?,'approved',?)",
                     (title, body, category, now())
                 )
+        # Curated pack inserts only NEW documents; never touches owner edits.
+        from .brand_knowledge import apply_pack
+        apply_pack(db)

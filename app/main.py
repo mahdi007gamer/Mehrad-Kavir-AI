@@ -150,8 +150,24 @@ class KnowledgeIn(BaseModel):
 
 @app.get("/api/knowledge")
 def list_knowledge(user=Depends(user_for)):
+    # Expose the provenance of each curated document, not just its text.
+    from .brand_knowledge import checksum
     with db.read() as con:
-        return [dict(x) for x in con.execute("SELECT id,title,body,category,status,version,source_type,created_at,reviewed_at FROM knowledge ORDER BY id DESC LIMIT 300")]
+        rows = con.execute(
+            "SELECT k.id,k.title,k.body,k.category,k.status,k.version,k.source_type,"
+            "k.created_at,k.reviewed_at,"
+            "p.seed_key,p.evidence_class,p.pack_version,p.source_fingerprint "
+            "FROM knowledge k LEFT JOIN brand_knowledge_pack_entries p "
+            "ON p.knowledge_id=k.id ORDER BY k.id DESC LIMIT 300"
+        ).fetchall()
+    documents=[]
+    for row in rows:
+        doc=dict(row)
+        fingerprint=doc.pop("source_fingerprint")
+        doc["edited_since_pack"]=bool(fingerprint and fingerprint!=checksum(
+            doc["title"],doc["category"],doc["body"]))
+        documents.append(doc)
+    return documents
 
 @app.post("/api/knowledge")
 def add_knowledge(data:KnowledgeIn,user=Depends(EDITOR)):
