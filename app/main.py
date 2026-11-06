@@ -147,7 +147,7 @@ class KnowledgeIn(BaseModel):
 @app.get("/api/knowledge")
 def list_knowledge(user=Depends(user_for)):
     with db.read() as con:
-        return [dict(x) for x in con.execute("SELECT id,title,body,category,status,created_at,reviewed_at FROM knowledge ORDER BY id DESC LIMIT 300")]
+        return [dict(x) for x in con.execute("SELECT id,title,body,category,status,version,source_type,created_at,reviewed_at FROM knowledge ORDER BY id DESC LIMIT 300")]
 
 @app.post("/api/knowledge")
 def add_knowledge(data:KnowledgeIn,user=Depends(EDITOR)):
