@@ -57,6 +57,13 @@ CREATE TABLE IF NOT EXISTS lead_events (
  old_stage TEXT, new_stage TEXT NOT NULL, actor INTEGER REFERENCES users(id),
  created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS update_requests (
+ id INTEGER PRIMARY KEY, target_sha TEXT NOT NULL,
+ state TEXT NOT NULL CHECK(state IN ('approved','applying','completed','failed')),
+ detail TEXT, approved_by INTEGER REFERENCES users(id),
+ created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_updates_state ON update_requests(state,id);
 CREATE TABLE IF NOT EXISTS auto_policies (
  id INTEGER PRIMARY KEY, keyword TEXT NOT NULL, template TEXT NOT NULL,
  enabled INTEGER NOT NULL DEFAULT 0 CHECK(enabled IN (0,1)),
