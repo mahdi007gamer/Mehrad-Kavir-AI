@@ -8,12 +8,12 @@ from cryptography.fernet import Fernet, InvalidToken
 from . import db
 
 NAMES=frozenset({
-    "OPENAI_API_KEY","OPENAI_MODEL",
+    "OPENAI_API_KEY","OPENAI_MODEL","AI_PROVIDER", "GEMINI_API_KEY","GEMINI_MODEL", "GEMINI_LIVE_MODEL", "GEMINI_TTS_MODEL", "GEMINI_VOICE", "TWILIO_AUTH_TOKEN", "TWILIO_ACCOUNT_SID", "PHONE_PUBLIC_BASE_URL", "PHONE_RECEPTION_ENABLED",
     "META_ACCESS_TOKEN","META_APP_SECRET","META_VERIFY_TOKEN",
     "META_IG_USER_ID","META_GRAPH_VERSION"
 })
 SECRETS=frozenset({
-    "OPENAI_API_KEY","META_ACCESS_TOKEN","META_APP_SECRET","META_VERIFY_TOKEN"
+    "OPENAI_API_KEY","GEMINI_API_KEY","TWILIO_AUTH_TOKEN","META_ACCESS_TOKEN","META_APP_SECRET","META_VERIFY_TOKEN"
 })
 
 def cipher():
@@ -59,7 +59,11 @@ def write_batch(values,actor):
     return sorted(values)
 
 def erase_provider(provider,actor):
-    if provider=="openai":
+    if provider=="gemini":
+        names=["GEMINI_API_KEY","GEMINI_MODEL","GEMINI_LIVE_MODEL","GEMINI_TTS_MODEL","GEMINI_VOICE"]
+    elif provider=="telephony":
+        names=["TWILIO_AUTH_TOKEN","TWILIO_ACCOUNT_SID","PHONE_PUBLIC_BASE_URL","PHONE_RECEPTION_ENABLED"]
+    elif provider=="openai":
         names=["OPENAI_API_KEY","OPENAI_MODEL"]
     elif provider=="meta":
         names=["META_ACCESS_TOKEN","META_APP_SECRET","META_VERIFY_TOKEN","META_IG_USER_ID","META_GRAPH_VERSION"]
