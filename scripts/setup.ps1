@@ -33,7 +33,7 @@ function Add-EnvLine([string]$Contents, [string]$Line) {
     $key = $Line.Substring(0, $Line.IndexOf("="))
     $pattern = "(?m)^" + [regex]::Escape($key) + "="
     if ($Contents -match $pattern) { return $Contents }
-    if ($Contents.Length -gt 0 -and -not $Contents[$Contents.Length - 1] -eq [char]10) {
+    if ($Contents.Length -gt 0 -and $Contents[$Contents.Length - 1] -ne [char]10) {
         $Contents += [Environment]::NewLine
     }
     return $Contents + $Line + [Environment]::NewLine
