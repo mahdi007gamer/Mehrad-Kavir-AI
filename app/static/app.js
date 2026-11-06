@@ -130,14 +130,62 @@
     const title=e(obj.title);
     const body=e(type==="rule"?obj.instruction:obj.body);
     const state=obj.status;
-    const button=(state==="pending"&&user?.role==="owner")?'<div class="record-actions"><button class="btn small primary" data-review="'+type+':'+Number(obj.id)+':approved">تأیید</button><button class="btn small danger" data-review="'+type+':'+Number(obj.id)+':rejected">رد</button></div>':"";
+    const button=(state==="pending"&&user?.role==="owner")?'<div class="record-actions"><button class="btn small primary" data-review="'+type+':'+Number(obj.id)+':approved">تأیید</button><button class="btn small danger" data-review="'+type+':'+Number(obj.id)+':rejected">رد</button></div>':(type==="knowledge"&&state==="approved"?'<div class="record-actions"><button class="btn small ghost" data-edit-knowledge="'+Number(obj.id)+'">ویرایش سند / نسخه '+Number(obj.version||1)+'</button></div>':"");
     return '<div class="record"><div class="record-head"><h4>'+title+'</h4>'+chip(statusText[state]||state,state==="approved"?"success":state==="pending"?"warning":"danger")+'</div><p>'+body+'</p><small>'+e(type==="rule"?obj.scope:obj.category)+' · '+e(fmt(obj.created_at))+'</small>'+button+'</div>';
   }
   async function knowledge() {
     const items=await api("/api/knowledge");
+    window.__knowledgeCache=Object.fromEntries(items.map(x=>[x.id,x]));
     txt("#knowledgeCount",items.length+" سند");
     $("#knowledgeList").innerHTML=items.length?items.map(x=>record(x,"knowledge")).join(""):feedEmpty("هیچ سندی ثبت نشده است.");
+    await refreshImports();
   }
+
+  async function refreshImports() {
+    try {
+      const [jobs,docs]=await Promise.all([api("/api/import/jobs"),api("/api/import/documents")]);
+      $("#importJobList").innerHTML=jobs.length?jobs.map(x=>
+        '<div class="record"><div class="record-head"><h4>'+e(x.provider)+'</h4>'+
+        chip(x.state,x.state==="completed"?"success":x.state==="failed"?"danger":"warning")+
+        '</div><small>'+e(fmt(x.created_at))+' · موارد دریافت‌شده: '+Number(x.processed)+'</small>'+
+        (x.error?'<p>'+e(x.error)+'</p>':"")+'</div>').join(""):feedEmpty("هنوز واردسازی شروع نشده.");
+      $("#stagedDocs").innerHTML=docs.length?docs.map(x=>
+        '<div class="record"><div class="record-head"><h4>'+e(x.title)+'</h4>'+
+        chip(statusText[x.status]||x.status,x.status==="approved"?"success":x.status==="pending"?"warning":"")+
+        '</div><small>'+e(x.provider)+" · "+e(x.source_url)+'</small><p>'+e(x.body.slice(0,1100))+
+        (x.body.length>1100?"...":"")+'</p>'+
+        (x.status==="pending"&&user.role==="owner"?
+          '<div class="record-actions"><button class="btn primary small" data-review-import="'+Number(x.id)+':approved">تأیید ورود به حافظه</button>'+
+          '<button class="btn danger small" data-review-import="'+Number(x.id)+':rejected">رد</button></div>':"")+
+        '</div>').join(""):feedEmpty("موردی در صف بررسی نیست.");
+    } catch(err) {notify(err.message,true);}
+  }
+
+  async function showKnowledgeEditor(id) {
+    const doc=window.__knowledgeCache?.[id];
+    if(!doc)return notify("سند انتخاب‌شده موجود نیست",true);
+    const form=$("#knowledgeEditForm");
+    for(const name of ["id","base_version","title","category","body"]){
+      const v=name==="id"?id:name==="base_version"?doc.version:doc[name];
+      form.elements.namedItem(name).value=v;
+    }
+    await loadKnowledgeHistory(id);
+    form.scrollIntoView({behavior:"smooth",block:"center"});
+  }
+
+  async function loadKnowledgeHistory(id) {
+    const result=await api("/api/knowledge/"+id+"/history");
+    $("#revisionList").innerHTML=result.revisions.length?
+      result.revisions.map(r=>
+        '<div class="record"><div class="record-head"><h4>نسخه پیشنهادی '+(Number(r.base_version)+1)+'</h4>'+
+        chip(statusText[r.status]||r.status,r.status==="approved"?"success":r.status==="pending"?"warning":"")+
+        '</div><small>'+e(fmt(r.created_at))+'</small><p>'+e(r.title)+': '+e(r.body.slice(0,400))+'</p>'+
+        (r.status==="pending"&&user.role==="owner"?
+          '<div class="record-actions"><button class="btn primary small" data-review-revision="'+Number(r.id)+':approved">تأیید اصلاح</button>'+
+          '<button class="btn danger small" data-review-revision="'+Number(r.id)+':rejected">رد اصلاح</button></div>':"")+
+        '</div>').join(""):feedEmpty("هنوز ویرایشی ثبت نشده.");
+  }
+
   async function rules() {
     const items=await api("/api/rules");
     txt("#rulesCount",items.length+" قانون");
@@ -255,6 +303,34 @@
     if(approval){try{await actDraft(Number(approval.dataset.approve||approval.dataset.reject),approval.dataset.approve?"approve":"reject");}catch(err){notify(err.message,true);}return;}
     const reviewButton=ev.target.closest("[data-review]");
     if(reviewButton){const [kind,id,decision]=reviewButton.dataset.review.split(":");try{await review(kind,Number(id),decision);}catch(err){notify(err.message,true);}return;}
+    const editDoc=ev.target.closest("[data-edit-knowledge]");
+    if(editDoc){try{await showKnowledgeEditor(Number(editDoc.dataset.editKnowledge));}catch(err){notify(err.message,true);}return;}
+    const importBtn=ev.target.closest("[data-start-import]");
+    if(importBtn){
+      const provider=importBtn.dataset.startImport;
+      if(!confirm("اطلاعات منبع "+provider+" در صف بررسی ثبت شود؟ هیچ مدرکی بدون تأیید وارد حافظه نمی‌شود."))return;
+      importBtn.disabled=true;
+      try{await api("/api/import/jobs",{method:"POST",body:{provider}});notify("درخواست واردسازی در صف پردازش ثبت شد.");await refreshImports();}
+      catch(err){notify(err.message,true);}finally{importBtn.disabled=false;}
+      return;
+    }
+    const importReview=ev.target.closest("[data-review-import]");
+    if(importReview){
+      const [id,decision]=importReview.dataset.reviewImport.split(":");
+      if(!confirm("وضعیت این سند "+(decision==="approved"?"تأیید":"رد")+" شود؟"))return;
+      try{await api("/api/import/documents/"+id+"/review",{method:"POST",body:{decision}});notify("نتیجه بررسی ذخیره شد.");await knowledge();}
+      catch(err){notify(err.message,true);}
+      return;
+    }
+    const revisionReview=ev.target.closest("[data-review-revision]");
+    if(revisionReview){
+      const [id,decision]=revisionReview.dataset.reviewRevision.split(":");
+      const docId=Number($("#knowledgeEditForm").elements.namedItem("id").value);
+      if(!confirm("اصلاح سند "+(decision==="approved"?"تأیید":"رد")+" شود؟"))return;
+      try{await api("/api/knowledge/revisions/"+id+"/review",{method:"POST",body:{decision}});notify("نسخه بررسی شد.");await knowledge();if(docId)await loadKnowledgeHistory(docId);}
+      catch(err){notify(err.message,true);}
+      return;
+    }
     const archive=ev.target.closest("[data-scenario]");
     if(archive){lastScenario=window.__scenarioCache?.[archive.dataset.scenario]||"";txt("#scenarioOutput",lastScenario);$("#scenarioOutput").classList.remove("empty");$("#copyScenario").disabled=!lastScenario;}
   });
@@ -262,6 +338,17 @@
   $("#logoutBtn").addEventListener("click",async()=>{try{await api("/api/auth/logout",{method:"POST"});}catch{}csrf="";user=null;showLogin();});
   $("#refreshBtn").addEventListener("click",refreshCurrent);$("#inboxRefresh").addEventListener("click",refreshCurrent);
   $("#demoForm").addEventListener("submit",ev=>{ev.preventDefault();submitForm(ev.target,"/api/demo/message","پیام در صف پردازش ثبت شد",async result=>{selectedThread=result.thread_id;await inbox();});});
+  $("#knowledgeEditForm").addEventListener("submit",async ev=>{
+    ev.preventDefault();
+    const form=ev.target,data=getForm(form),id=Number(data.id);
+    if(!id)return notify("ابتدا یک سند تأییدشده را انتخاب کنید.",true);
+    const btn=form.querySelector("[type=submit]");btn.disabled=true;
+    try{
+      await api("/api/knowledge/"+id+"/revisions",{method:"POST",
+        body:{base_version:Number(data.base_version),title:data.title,body:data.body,category:data.category}});
+      notify("ویرایش در صف تأیید مدیر ثبت شد.");await knowledge();await loadKnowledgeHistory(id);
+    }catch(err){notify(err.message,true);}finally{btn.disabled=false;}
+  });
   $("#knowledgeForm").addEventListener("submit",ev=>{ev.preventDefault();submitForm(ev.target,"/api/knowledge","سند پیشنهادی ثبت شد.");});
   $("#feedbackForm").addEventListener("submit",async ev=>{
     ev.preventDefault();
