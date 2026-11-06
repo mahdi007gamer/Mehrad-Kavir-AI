@@ -155,17 +155,71 @@
     window.__scenarioCache=Object.fromEntries(rows.map(x=>[x.id,x.body]));
   }
   async function security() {
-    const d=await api("/api/settings");
+    const d=await api("/api/integrations");
     const statuses=[
-      ["OpenAI Responses API","تولید متن و سناریو",d.openai_ready],
-      ["Meta Instagram API","دایرکت و کامنت رسمی",d.instagram_ready],
-      ["Human Approval Gate","کنترل انسانی ارسال",true],
-      ["Automatic Live Sending","به‌صورت پیش‌فرض غیرفعال",false]
+      ["OpenAI Responses API","مدل: "+(d.openai.fields.OPENAI_MODEL.value||"تنظیم نشده"),d.openai],
+      ["Meta Instagram API","حساب: @mehradkavir",d.meta]
     ];
-    $("#integrationCards").innerHTML=statuses.map(s=>'<div class="integration-card"><span>◉</span><div><b>'+e(s[0])+'</b><small>'+e(s[1])+'</small></div><em>'+e(s[2]?"آماده":"غیرفعال")+'</em></div>').join("");
+    $("#integrationCards").innerHTML=statuses.map(x=>{
+      const xStatus=x[2].verified?"اتصال آزمایش‌شده":x[2].configured?"تنظیم‌شده، نیازمند تست":"تنظیم نشده";
+      return '<div class="integration-card"><span>◉</span><div><b>'+e(x[0])+'</b><small>'+e(x[1])+'</small></div><em>'+e(xStatus)+'</em></div>';
+    }).join("");
+    const vault=$("#vaultStatus");
+    vault.textContent=d.vault_ready?
+      "صندوق امن فعال است: کلیدهای شما فقط به‌صورت رمزگذاری‌شده ذخیره می‌شوند. مقدار موجود پس از ذخیره قابل مشاهده نیست.":
+      "صندوق رمزنگاری هنوز راه‌اندازی نشده است. فایل نصب جدید START-WINDOWS.bat را اجرا کنید.";
+    vault.classList.toggle("err",!d.vault_ready);
+    const openai=$("#openaiConnectForm");
+    const meta=$("#metaConnectForm");
+    const model=d.openai.fields.OPENAI_MODEL?.value || "gpt-5-mini";
+    if(!openai.querySelector("[name=model]").matches(":focus"))
+      openai.querySelector("[name=model]").value=model;
+    const confId=d.meta.fields.META_IG_USER_ID?.value || "";
+    if(!meta.querySelector("[name=ig_user_id]").matches(":focus"))
+      meta.querySelector("[name=ig_user_id]").value=confId;
+    if(!meta.querySelector("[name=graph_version]").matches(":focus"))
+      meta.querySelector("[name=graph_version]").value=d.meta.fields.META_GRAPH_VERSION?.value || "v25.0";
+    for(const [form,fields] of [[openai,["api_key"]],[meta,["access_token","app_secret","verify_token"]]]){
+      for(const name of fields){
+        const el=form.querySelector('[name="'+name+'"]');
+        const key=({"api_key":"OPENAI_API_KEY","access_token":"META_ACCESS_TOKEN",
+                    "app_secret":"META_APP_SECRET","verify_token":"META_VERIFY_TOKEN"})[name];
+        const configured=name==="api_key"?d.openai.fields[key]?.configured:d.meta.fields[key]?.configured;
+        el.placeholder=configured?"قبلاً ثبت شده؛ برای حفظ مقدار خالی بگذارید":"مقدار جدید را اینجا وارد کنید";
+      }
+    }
+    $("#metaWebhookUrl").value=window.location.origin+"/webhooks/instagram";
+    txt("#openaiTestResult",d.openai.last_test?
+      ("آخرین تست: "+(d.openai.last_test.status==="ok"?"موفق":"ناموفق")+" • "+fmt(d.openai.last_test.checked_at)):"هنوز آزمایش نشده");
+    txt("#metaTestResult",d.meta.last_test?
+      ("آخرین تست حساب: "+(d.meta.last_test.status==="ok"?"موفق":"ناموفق")+" • "+fmt(d.meta.last_test.checked_at)):"حساب هنوز آزمایش نشده");
     const audit=await api("/api/audit");
     $("#auditRecords").innerHTML=audit.length?audit.map(x=>'<div class="record"><div class="record-head"><h4>'+e(x.action)+'</h4><small>'+e(fmt(x.created_at))+'</small></div><small>'+e(x.actor)+" · "+e(x.entity)+" #"+e(x.entity_id)+'</small></div>').join(""):feedEmpty("لاگی ثبت نشده است.");
   }
+
+  async function submitIntegration(provider,form) {
+    const btn=form.querySelector("[type=submit]");btn.disabled=true;
+    try {
+      const payload=getForm(form);
+      const secrets=provider==="openai"?["api_key"]:["access_token","app_secret","verify_token"];
+      for(const name of secrets)if(!payload[name])delete payload[name];
+      await api("/api/integrations/"+provider,{method:"POST",body:payload});
+      for(const name of secrets)form.querySelector('[name="'+name+'"]').value="";
+      notify("تنظیمات با موفقیت به‌صورت رمزگذاری‌شده ثبت شدند. حالا دکمه آزمایش اتصال را بزنید.");
+      await security();
+    }catch(err){notify(err.message,true);}finally{btn.disabled=false;}
+  }
+
+  async function testIntegration(provider,btn) {
+    btn.disabled=true;
+    try{
+      const result=await api("/api/integrations/"+provider+"/test",{method:"POST"});
+      notify(provider==="meta"?"توکن حساب @mehradkavir تأیید شد. وب‌هوک و مجوز پیام‌رسانی هنوز باید بررسی شوند.":"دسترسی OpenAI و مدل انتخابی با موفقیت تأیید شد.");
+      await security();
+    }catch(err){notify("تست اتصال ناموفق: "+err.message,true);await security().catch(()=>{});}
+    finally{btn.disabled=false;}
+  }
+
   async function submitForm(form, endpoint, msg, follow) {
     const button=form.querySelector("[type=submit]"); button.disabled=true;
     try {
@@ -210,6 +264,23 @@
   });
   $("#ruleForm").addEventListener("submit",ev=>{ev.preventDefault();submitForm(ev.target,"/api/rules","قانون پیشنهادی ثبت شد.");});
   $("#scenarioForm").addEventListener("submit",async ev=>{ev.preventDefault();const form=ev.target; const btn=form.querySelector("[type=submit]");btn.disabled=true;txt("#scenarioOutput","در حال پردازش توسط موتور محتوا…");try{const r=await api("/api/scenarios",{method:"POST",body:getForm(form)});lastScenario=r.body;txt("#scenarioOutput",r.body);$("#scenarioOutput").classList.remove("empty");$("#copyScenario").disabled=false;notify(r.generated_by==="openai"?"سناریو تولید شد.":"قالب آزمایشی ساخته شد؛ اتصال مدل را بررسی کنید.");await scenarios();}catch(err){notify(err.message,true);}finally{btn.disabled=false;}});
+  $("#openaiConnectForm").addEventListener("submit",ev=>{ev.preventDefault();submitIntegration("openai",ev.target);});
+  $("#metaConnectForm").addEventListener("submit",ev=>{ev.preventDefault();submitIntegration("meta",ev.target);});
+  document.addEventListener("click",async ev=>{
+    const tester=ev.target.closest("[data-test-integration]");
+    if(tester){await testIntegration(tester.dataset.testIntegration,tester);return;}
+    const disc=ev.target.closest("[data-disconnect-integration]");
+    if(disc){
+      const provider=disc.dataset.disconnectIntegration;
+      if(!window.confirm("اتصال "+provider+" را قطع می‌کنید؟ توکن ثبت‌شده در صندوق امن خالی خواهد شد."))return;
+      disc.disabled=true;
+      try{
+        await api("/api/integrations/"+provider+"/disconnect",{method:"POST"});
+        notify("اتصال قطع شد. برای ابطال کامل، توکن را در سرویس اصلی هم لغو کنید.");
+        await security();
+      }catch(err){notify(err.message,true);}finally{disc.disabled=false;}
+    }
+  });
   $("#passwordForm").addEventListener("submit",async ev=>{
     ev.preventDefault();
     const form=ev.target, btn=form.querySelector("[type=submit]");
