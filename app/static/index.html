@@ -185,9 +185,46 @@
         <div class="panel"><div class="panel-title"><h3>آرشیو سناریوها</h3><span class="subtle">قابل بازیابی</span></div><div id="scenarioList" class="records scenario-list"></div></div>
       </section>
       <section class="page" id="page-security">
-        <div class="page-head"><div><span class="eyebrow">SECURITY & GOVERNANCE</span><h1>امنیت و اتصالات<span class="accent">.</span></h1><p>وضعیت سرویس‌ها و تاریخچه اقدامات حساس.</p></div></div>
+        <div class="page-head"><div><span class="eyebrow">SECURITY & GOVERNANCE</span><h1>امنیت و اتصالات<span class="accent">.</span></h1><p>مدیریت امن OpenAI و Meta، آزمایش اتصال، کنترل خودکارسازی و تاریخچه عملیات.</p></div></div>
         <div class="columns">
-          <div class="panel"><h3>یکپارچه‌سازی سرویس‌ها</h3><div id="integrationCards"></div><div class="notice">کلیدهای OpenAI و Meta فقط از طریق متغیرهای محیطی سرور تعریف می‌شوند و هرگز در پنل قابل خواندن نیستند.</div>
+          <div class="panel integration-manager">
+            <div class="panel-title"><h3>مرکز اتصال سرویس‌ها</h3><span class="chip">OWNER ONLY</span></div>
+            <div id="integrationCards"></div>
+            <div id="vaultStatus" class="notice">در حال بررسی صندوق رمزنگاری‌شده...</div>
+
+            <form id="openaiConnectForm" class="stack integration-form">
+              <div class="provider-heading"><span class="provider-mark">✧</span><div><b>OpenAI — مغز هوش مصنوعی</b><small>تولید سناریو، تحلیل بازخورد و پاسخ تخصصی</small></div></div>
+              <label>کلید OpenAI API (فقط روی سرور رمزنگاری می‌شود)</label>
+              <input type="password" name="api_key" autocomplete="new-password" maxlength="300" placeholder="sk-... / خالی بگذارید تا کلید موجود حفظ شود">
+              <label>شناسه مدل</label>
+              <input type="text" name="model" minlength="2" maxlength="80" value="gpt-5-mini" required dir="ltr" placeholder="gpt-5-mini">
+              <div class="button-row"><button type="submit" class="btn primary">ذخیره تنظیمات OpenAI</button>
+              <button type="button" class="btn ghost" data-test-integration="openai">آزمایش اتصال</button>
+              <button type="button" class="btn danger" data-disconnect-integration="openai">قطع اتصال</button></div>
+              <p id="openaiTestResult" class="micro"></p>
+            </form>
+            <form id="metaConnectForm" class="stack integration-form">
+              <div class="provider-heading"><span class="provider-mark">◎</span><div><b>Instagram / Meta</b><small>اتصال رسمی حساب @mehradkavir</small></div></div>
+              <div class="notice">این بخش برای ثبت توکن رسمی Meta است. احراز هویت OAuth خودکار هنوز ساخته نشده و برای دریافت توکن باید از Meta Developer استفاده کنید.</div>
+              <label>Instagram User ID (شناسه عددی حساب حرفه‌ای)</label>
+              <input name="ig_user_id" type="text" required pattern="[0-9]{4,35}" maxlength="35" inputmode="numeric" dir="ltr" placeholder="Professional account ID">
+              <label>Access Token</label>
+              <input name="access_token" type="password" autocomplete="new-password" maxlength="3000" placeholder="برای حفظ توکن فعلی خالی بگذارید">
+              <label>Meta App Secret</label>
+              <input name="app_secret" type="password" autocomplete="new-password" maxlength="300" placeholder="برای حفظ مقدار موجود خالی بگذارید">
+              <label>Webhook Verify Token</label>
+              <input name="verify_token" type="password" autocomplete="new-password" maxlength="300" placeholder="مقدار انتخابی خودتان / برای حفظ مقدار قبلی خالی بگذارید">
+              <label>نسخه Graph API</label>
+              <input name="graph_version" type="text" value="v25.0" required pattern="v[0-9]{1,2}\.[0-9]{1,2}" maxlength="12" dir="ltr">
+              <label>Webhook Callback</label>
+              <input type="text" id="metaWebhookUrl" readonly dir="ltr" value="/webhooks/instagram">
+              <div class="button-row"><button type="submit" class="btn primary">ذخیره تنظیمات Meta</button>
+              <button type="button" class="btn ghost" data-test-integration="meta">آزمایش حساب</button>
+              <button type="button" class="btn danger" data-disconnect-integration="meta">قطع اتصال</button></div>
+              <p id="metaTestResult" class="micro"></p>
+              <p class="micro"><a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer">Meta Developer Apps</a> · اتصال تنها پس از تأیید سطح دسترسی، وب‌هوک و تست واقعی آماده پاسخ‌گویی خواهد بود.</p>
+            </form>
+            <div class="notice">هیچ کلید ذخیره‌شده‌ای دوباره از API به مرورگر برنمی‌گردد؛ وضعیت اتصال و نام حساب فقط پس از اعتبارسنجی نشان داده می‌شود.</div>
             <form id="passwordForm" class="stack" style="margin-top:24px">
               <h3>تغییر رمز حساب</h3>
               <label>رمز فعلی</label>
