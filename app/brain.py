@@ -86,6 +86,9 @@ def retrieve(text, specialty="support"):
 def call_model(instructions, input_text, schema, name):
     if not settings.ai_ready():
         return None
+    if settings.effective('AI_PROVIDER')=='gemini':
+        from .gemini_engine import structured
+        return structured(instructions,input_text,schema,name)
     import httpx
     request = {
         "model": settings.effective('OPENAI_MODEL'),
