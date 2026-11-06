@@ -193,8 +193,25 @@
       ("آخرین تست: "+(d.openai.last_test.status==="ok"?"موفق":"ناموفق")+" • "+fmt(d.openai.last_test.checked_at)):"هنوز آزمایش نشده");
     txt("#metaTestResult",d.meta.last_test?
       ("آخرین تست حساب: "+(d.meta.last_test.status==="ok"?"موفق":"ناموفق")+" • "+fmt(d.meta.last_test.checked_at)):"حساب هنوز آزمایش نشده");
+    await loadUpdates();
     const audit=await api("/api/audit");
     $("#auditRecords").innerHTML=audit.length?audit.map(x=>'<div class="record"><div class="record-head"><h4>'+e(x.action)+'</h4><small>'+e(fmt(x.created_at))+'</small></div><small>'+e(x.actor)+" · "+e(x.entity)+" #"+e(x.entity_id)+'</small></div>').join(""):feedEmpty("لاگی ثبت نشده است.");
+  }
+
+  async function loadUpdates() {
+    const status=$("#updateStatus"), button=$("#updateApproveBtn");
+    button.disabled=true;button.dataset.sha="";
+    try {
+      const r=await api("/api/updates/status");
+      const short=s=>s&&s!=="unknown"?s.slice(0,10):"نامشخص";
+      const state=r.request?.state||"";
+      status.textContent="نسخه نصب‌شده: "+short(r.installed_sha)+" | آخرین نسخه رسمی: "+short(r.latest_sha)+
+        (r.installed_known?(r.available?" | نسخه جدید موجود است.":" | نسخه نصب‌شده به‌روز است."):" | یک‌بار نصب‌کننده را اجرا کنید تا نسخه ثبت شود.")+
+        (state?" | آخرین درخواست: "+state:"");
+      if(r.available && r.installed_known && !["approved","applying"].includes(state)){
+        button.disabled=false;button.dataset.sha=r.latest_sha;
+      }
+    }catch(err){status.textContent="دریافت نسخه GitHub ناموفق بود؛ اتصال اینترنت یا GitHub را بررسی کنید.";button.disabled=true;}
   }
 
   async function submitIntegration(provider,form) {
@@ -264,6 +281,22 @@
   });
   $("#ruleForm").addEventListener("submit",ev=>{ev.preventDefault();submitForm(ev.target,"/api/rules","قانون پیشنهادی ثبت شد.");});
   $("#scenarioForm").addEventListener("submit",async ev=>{ev.preventDefault();const form=ev.target; const btn=form.querySelector("[type=submit]");btn.disabled=true;txt("#scenarioOutput","در حال پردازش توسط موتور محتوا…");try{const r=await api("/api/scenarios",{method:"POST",body:getForm(form)});lastScenario=r.body;txt("#scenarioOutput",r.body);$("#scenarioOutput").classList.remove("empty");$("#copyScenario").disabled=false;notify(r.generated_by==="openai"?"سناریو تولید شد.":"قالب آزمایشی ساخته شد؛ اتصال مدل را بررسی کنید.");await scenarios();}catch(err){notify(err.message,true);}finally{btn.disabled=false;}});
+  $("#updateCheckBtn").addEventListener("click",async ev=>{
+    ev.target.disabled=true;
+    try{await api("/api/updates/check",{method:"POST"});await loadUpdates();notify("آخرین تغییرات GitHub بررسی شدند.");}
+    catch(err){notify(err.message,true);}finally{ev.target.disabled=false;}
+  });
+  $("#updateApproveBtn").addEventListener("click",async ev=>{
+    const btn=ev.target,sha=btn.dataset.sha;
+    if(!/^[a-f0-9]{40}$/.test(sha))return;
+    if(!confirm("این نسخه رسمی GitHub را برای نصب روی همین سیستم تأیید می‌کنی؟ پیش از نصب از پایگاه داده نسخه پشتیبان گرفته می‌شود."))return;
+    btn.disabled=true;
+    try{
+      const r=await api("/api/updates/approve",{method:"POST",body:{sha}});
+      notify("آپدیت تأیید و در صف عامل محلی قرار گرفت. تا پایان نصب وضعیت سرویس را بررسی کنید.");
+      await loadUpdates();
+    }catch(err){notify(err.message,true);await loadUpdates();}
+  });
   $("#openaiConnectForm").addEventListener("submit",ev=>{ev.preventDefault();submitIntegration("openai",ev.target);});
   $("#metaConnectForm").addEventListener("submit",ev=>{ev.preventDefault();submitIntegration("meta",ev.target);});
   document.addEventListener("click",async ev=>{
@@ -294,5 +327,6 @@
   function tick(){txt("#clock",new Intl.DateTimeFormat("fa-IR",{weekday:"short",day:"numeric",month:"short"}).format(new Date()));}
   tick();setInterval(tick,60_000);
   setInterval(()=>{if(user && activePage==="inbox")inbox().catch(()=>{});},12_000);
+  setInterval(()=>{if(user&&activePage==="security")loadUpdates().catch(()=>{});},90000);
   bootstrap();
 })();
