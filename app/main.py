@@ -25,6 +25,12 @@ async def lifespan(_app):
 
 app = FastAPI(title="Mehrad Kavir AI", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=str(STATIC)), name="static")
+from .integrations import router as integration_router
+from .features import router as feature_router
+from .updates import router as update_router
+app.include_router(integration_router)
+app.include_router(feature_router)
+app.include_router(update_router)
 EDITOR = role_required("owner","editor")
 OWNER = role_required("owner")
 
