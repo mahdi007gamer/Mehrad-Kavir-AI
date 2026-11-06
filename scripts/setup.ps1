@@ -55,12 +55,12 @@ if (Test-Path $agent) {
   $rng=[System.Security.Cryptography.RandomNumberGenerator]::Create()
   try{$rng.GetBytes($keyBytes)}finally{$rng.Dispose()}
   $vaultKey=[Convert]::ToBase64String($keyBytes).Replace("+","-").Replace("/","_")
-  [System.IO.File]::AppendAllText($envPath,[Environment]::NewLine+"VAULT_ENCRYPTION_KEY=$vaultKey"+[Environment]::NewLine,[Text.Encoding]::UTF8)
+  [System.IO.File]::AppendAllText($envPath,[Environment]::NewLine+"VAULT_ENCRYPTION_KEY=$vaultKey"+[Environment]::NewLine,([System.Text.UTF8Encoding]::new($false)))
   Write-Host "Encrypted integration vault initialized; private key stored in .env." -ForegroundColor Green
 }
 $existing=[System.IO.File]::ReadAllText($envPath)
 if ($existing -notmatch '(?m)^AUTO_REPLY_ENABLED=') {
-  [System.IO.File]::AppendAllText($envPath,"AUTO_REPLY_ENABLED=false"+[Environment]::NewLine,[Text.Encoding]::UTF8)
+  [System.IO.File]::AppendAllText($envPath,"AUTO_REPLY_ENABLED=false"+[Environment]::NewLine,([System.Text.UTF8Encoding]::new($false)))
 }
 # Record current checked-out code so the dashboard can compare it with GitHub.
 $head = (& git rev-parse HEAD 2>$null | Out-String).Trim()
@@ -91,7 +91,7 @@ Write-Host "Edit .env to connect OpenAI and Meta, then run this script again." -
 } else {
   $existing += [Environment]::NewLine + "APP_REVISION=$head" + [Environment]::NewLine
 }
-[System.IO.File]::WriteAllText($envPath,$existing,[Text.Encoding]::UTF8)
+[System.IO.File]::WriteAllText($envPath,$existing,([System.Text.UTF8Encoding]::new($false)))
 docker compose version | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "Docker Compose v2 is required" }
 docker compose up --build -d
