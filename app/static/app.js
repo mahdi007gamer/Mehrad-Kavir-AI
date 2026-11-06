@@ -49,7 +49,7 @@
     activePage=page;
     $$(".page").forEach(x=>x.classList.toggle("active",x.id==="page-"+page));
     $$(".nav-link").forEach(x=>x.classList.toggle("active",x.dataset.page===page));
-    txt("#currentPageName", ({dashboard:"نمای کلی",inbox:"صندوق پیام",insights:"تحلیل پیج",knowledge:"دانش برند",memory:"حافظه و یادگیری",content:"استودیو محتوا",security:"امنیت و اتصالات"})[page]);
+    txt("#currentPageName", ({dashboard:"نمای کلی",inbox:"صندوق پیام",insights:"تحلیل پیج",crm:"مدیریت استعلام‌ها",automation:"پاسخ‌های خودکار",knowledge:"دانش برند",memory:"حافظه و یادگیری",content:"استودیو محتوا",security:"امنیت و اتصالات"})[page]);
     window.scrollTo({top:0,behavior:"smooth"});
     refreshCurrent();
   }
@@ -58,6 +58,8 @@
       if (activePage === "dashboard") await dashboard();
       else if (activePage === "inbox") await inbox();
       else if (activePage === "insights") await insights();
+      else if (activePage === "crm") await crm();
+      else if (activePage === "automation") await automation();
       else if (activePage === "knowledge") await knowledge();
       else if (activePage === "memory") await rules();
       else if (activePage === "content") await scenarios();
@@ -79,12 +81,57 @@
   }
   function chip(label,kind="") {return '<span class="chip '+e(kind)+'">'+e(label)+'</span>';}
   async function insights() {
-    // There is intentionally no simulated metric source. This view does not claim real Insights integration.
-    const data = await api("/api/dashboard");
-    txt("#insightsStatus", data.integration.meta
-      ? "اتصال پایه Meta در تنظیمات ثبت شده، اما مجوز و همگام‌سازی Instagram Insights هنوز پیاده‌سازی نشده است."
-      : "اتصال Meta هنوز آماده نیست و ماژول جمع‌آوری Instagram Insights نیز در نقشه توسعه قرار دارد.");
+    const data=await api("/api/analytics");
+    const metrics=data.latest_metrics||[];
+    const account=(metric)=>{
+      const row=metrics.find(x=>x.entity_type==="account"&&x.name===metric&&x.state==="available");
+      return row?new Intl.NumberFormat("fa-IR").format(row.value):"—";
+    };
+    txt("#igViews",account("views"));
+    txt("#igReach",account("reach"));
+    txt("#igEngagement","—"); // Not computable without compatible engagement and reach observations.
+    const leads=data.leads_by_stage||{};
+    const qualified=Object.entries(leads).filter(([stage])=>["qualified","engineering","quotation","won"].includes(stage)).reduce((n,[,value])=>n+Number(value||0),0);
+    txt("#igQualifiedLeads",new Intl.NumberFormat("fa-IR").format(qualified));
+    const observed=metrics.filter(x=>x.state==="available");
+    txt("#insightsStatus", observed.length?
+      ("داده‌های معتبر دریافت شده: "+observed.length+" شاخص. آخرین Snapshot: "+fmt(observed[0].observed_at)+". منبع: Meta Instagram API") :
+      "هنوز آمار معتبر از Meta Instagram API ثبت نشده است. از «دانش برند» فهرست پست‌ها و سپس دریافت Insights را اجرا کنید.");
+    $("#igMediaList").innerHTML=data.media.length?data.media.map(x=>{
+      const observations=metrics.filter(m=>m.entity_type==="media"&&m.entity_id===x.media_id&&m.state==="available");
+      const view=observations.find(m=>m.name==="views");
+      return '<div class="record"><div class="record-head"><h4>'+e(x.media_type||"Post")+'</h4>'+
+        chip(view?"Views: "+view.value:"بدون آمار معتبر")+'</div><p>'+e((x.caption||"بدون کپشن").slice(0,380))+'</p>'+
+        '<small>'+e(fmt(x.timestamp))+' · آخرین دریافت: '+e(fmt(x.last_synced_at))+'</small>'+
+        (x.permalink?'<p><a href="'+e(x.permalink)+'" target="_blank" rel="noopener noreferrer">مشاهده رسانه در اینستاگرام</a></p>':"")+
+        '</div>';
+    }).join(""):feedEmpty("هنوز پست و ریلزی از Meta دریافت نشده است.");
   }
+
+  const leadStages={new:"جدید",qualifying:"تکمیل مشخصات",qualified:"واجد شرایط",engineering:"بررسی فنی",quotation:"پیش‌فاکتور",won:"موفق",lost:"ناموفق"};
+  async function crm(){
+    const entries=await api("/api/leads");
+    $("#leadsList").innerHTML=entries.length?entries.map(x=>
+      '<div class="record"><div class="record-head"><h4>'+e(x.name)+'</h4>'+chip(leadStages[x.stage]||x.stage)+'</div>'+
+      '<small>'+e(x.project_city||"مکان مشخص نشده")+' · '+e(x.capacity_mw===null?"ظرفیت نامعلوم":x.capacity_mw+" مگاوات")+
+      ' · '+e(fmt(x.updated_at))+'</small><p>'+e(x.details||"نیازمند تکمیل مشخصات")+'</p>'+
+      '<label>مرحله پیگیری</label><select data-lead-stage="'+Number(x.id)+'">'+
+      Object.entries(leadStages).map(([key,label])=>'<option value="'+key+'"'+(key===x.stage?" selected":"")+'>'+e(label)+'</option>').join("")+
+      '</select></div>').join(""):feedEmpty("هنوز استعلامی ثبت نشده است.");
+  }
+
+  async function automation(){
+    const [state,policies]=await Promise.all([api("/api/automation/status"),api("/api/automation/policies")]);
+    txt("#autoPolicyStatus",state.server_enabled?
+      (state.meta_ready?"کلید فعال‌سازی سرور روشن است؛ قوانین محدود می‌توانند بررسی شوند.":"کلید سرور روشن است، اما Meta هنوز آماده نیست."):
+      "کلید توقف سرور فعال است؛ AUTO_REPLY_ENABLED=false. هیچ پاسخ خودکاری ارسال نمی‌شود.");
+    $("#autoPoliciesList").innerHTML=policies.length?policies.map(x=>
+      '<div class="record"><div class="record-head"><h4>'+e(x.keyword)+'</h4>'+chip(x.enabled?"فعال":"خاموش",x.enabled?"success":"")+'</div>'+
+      '<p>'+e(x.template)+'</p><button class="btn small '+(x.enabled?"danger":"ghost")+
+      '" data-toggle-policy="'+Number(x.id)+':'+(x.enabled?"false":"true")+'">'+(x.enabled?"غیرفعال کردن":"فعال‌کردن")+
+      '</button></div>').join(""):feedEmpty("قانونی تعریف نشده است.");
+  }
+
   async function inbox() {
     const threads=await api("/api/threads");
     const list=$("#threadsList");
@@ -331,6 +378,14 @@
       catch(err){notify(err.message,true);}
       return;
     }
+    const policy=ev.target.closest("[data-toggle-policy]");
+    if(policy){
+      const [id,value]=policy.dataset.togglePolicy.split(":");
+      if(!confirm("وضعیت قانون اتوماسیون تغییر کند؟"))return;
+      try{await api("/api/automation/policies/"+id+"/toggle",{method:"POST",body:{enabled:value==="true"}});notify("وضعیت سیاست ثبت شد.");await automation();}
+      catch(err){notify(err.message,true);}
+      return;
+    }
     const archive=ev.target.closest("[data-scenario]");
     if(archive){lastScenario=window.__scenarioCache?.[archive.dataset.scenario]||"";txt("#scenarioOutput",lastScenario);$("#scenarioOutput").classList.remove("empty");$("#copyScenario").disabled=!lastScenario;}
   });
@@ -338,6 +393,15 @@
   $("#logoutBtn").addEventListener("click",async()=>{try{await api("/api/auth/logout",{method:"POST"});}catch{}csrf="";user=null;showLogin();});
   $("#refreshBtn").addEventListener("click",refreshCurrent);$("#inboxRefresh").addEventListener("click",refreshCurrent);
   $("#demoForm").addEventListener("submit",ev=>{ev.preventDefault();submitForm(ev.target,"/api/demo/message","پیام در صف پردازش ثبت شد",async result=>{selectedThread=result.thread_id;await inbox();});});
+  $("#leadForm").addEventListener("submit",ev=>{ev.preventDefault();submitForm(ev.target,"/api/leads","درخواست در CRM ثبت شد.");});
+  $("#autoPolicyForm").addEventListener("submit",ev=>{ev.preventDefault();submitForm(ev.target,"/api/automation/policies","قانون ذخیره شد و به‌صورت پیش‌فرض خاموش است.");});
+  document.addEventListener("change",async ev=>{
+    const input=ev.target.closest("[data-lead-stage]");
+    if(!input)return;
+    try{await api("/api/leads/"+Number(input.dataset.leadStage)+"/stage",
+      {method:"POST",body:{stage:input.value}});notify("مرحله استعلام ثبت شد.");await crm();}
+    catch(err){notify(err.message,true);await crm();}
+  });
   $("#knowledgeEditForm").addEventListener("submit",async ev=>{
     ev.preventDefault();
     const form=ev.target,data=getForm(form),id=Number(data.id);
