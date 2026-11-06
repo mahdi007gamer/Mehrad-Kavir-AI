@@ -59,3 +59,22 @@ footer{text-align:center;color:#4d6686;font-size:10px;letter-spacing:1px;directi
 #page-phone .panel{margin-bottom:15px}
 #page-phone .panel-title{flex-wrap:wrap}
 #page-phone .button-row{gap:10px}
+
+/* Mehrad Kavir knowledge library — evidence-aware dense cards */
+.knowledge-filters{display:grid;grid-template-columns:minmax(180px,2fr) minmax(140px,1fr) minmax(130px,1fr);gap:8px;margin:14px 0}
+.knowledge-filters input,.knowledge-filters select{width:100%;min-width:0}
+.knowledge-stats{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.knowledge-stat{font-size:11px;color:#D9E4F4;background:rgba(174,184,194,.09);border:1px solid rgba(174,184,194,.17);border-radius:9px;padding:7px 10px}
+.knowledge-stat strong{font-size:14px;color:#F3F5F7;margin-left:5px}
+.knowledge-record{overflow-wrap:anywhere}
+.knowledge-record .record-head{align-items:flex-start;gap:8px}
+.knowledge-tags{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0 11px}
+.knowledge-tags small{background:rgba(0,111,254,.10);color:#BDDBFF;border:1px solid rgba(0,111,254,.18);border-radius:6px;padding:4px 7px;font-size:10px}
+.knowledge-record p{white-space:pre-line;line-height:1.85;overflow-wrap:anywhere}
+.knowledge-expand{margin:8px 0;padding:7px 10px;background:rgba(255,255,255,.02);border:1px solid rgba(174,184,194,.14);border-radius:8px}
+.knowledge-expand summary{cursor:pointer;color:#74B6FF;font-size:11px;font-weight:600}
+.knowledge-expand p{padding-top:8px}
+.knowledge-edited{display:block;color:#F5B55D;margin-top:8px}
+#knowledgeList{max-height:min(1100px,75vh);overflow-y:auto;scrollbar-color:#3E5872 transparent;scrollbar-width:thin;padding-left:3px}
+@media(max-width:850px){.knowledge-filters{grid-template-columns:1fr 1fr}.knowledge-filters input{grid-column:1/-1}}
+@media(max-width:500px){.knowledge-filters{grid-template-columns:1fr}.knowledge-filters input{grid-column:auto}}
