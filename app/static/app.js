@@ -184,6 +184,22 @@
   $("#refreshBtn").addEventListener("click",refreshCurrent);$("#inboxRefresh").addEventListener("click",refreshCurrent);
   $("#demoForm").addEventListener("submit",ev=>{ev.preventDefault();submitForm(ev.target,"/api/demo/message","پیام در صف پردازش ثبت شد",async result=>{selectedThread=result.thread_id;await inbox();});});
   $("#knowledgeForm").addEventListener("submit",ev=>{ev.preventDefault();submitForm(ev.target,"/api/knowledge","سند پیشنهادی ثبت شد.");});
+  $("#feedbackForm").addEventListener("submit",async ev=>{
+    ev.preventDefault();
+    const form=ev.target, btn=form.querySelector("[type=submit]");
+    btn.disabled=true;
+    try{
+      const r=await api("/api/feedback/propose",{method:"POST",body:getForm(form)});
+      const panel=$("#feedbackResult");
+      panel.classList.remove("hidden");
+      if(r.needs_clarification){
+        panel.textContent="هوش مصنوعی به توضیح بیشتری نیاز دارد: "+r.question;
+      }else{
+        panel.textContent="قانون پیشنهادی (در انتظار تأیید مدیر): "+r.title+" — "+r.instruction;
+        form.reset();await rules();
+      }
+    }catch(err){notify(err.message,true);}finally{btn.disabled=false;}
+  });
   $("#ruleForm").addEventListener("submit",ev=>{ev.preventDefault();submitForm(ev.target,"/api/rules","قانون پیشنهادی ثبت شد.");});
   $("#scenarioForm").addEventListener("submit",async ev=>{ev.preventDefault();const form=ev.target; const btn=form.querySelector("[type=submit]");btn.disabled=true;txt("#scenarioOutput","در حال پردازش توسط موتور محتوا…");try{const r=await api("/api/scenarios",{method:"POST",body:getForm(form)});lastScenario=r.body;txt("#scenarioOutput",r.body);$("#scenarioOutput").classList.remove("empty");$("#copyScenario").disabled=false;notify(r.generated_by==="openai"?"سناریو تولید شد.":"قالب آزمایشی ساخته شد؛ اتصال مدل را بررسی کنید.");await scenarios();}catch(err){notify(err.message,true);}finally{btn.disabled=false;}});
   $("#passwordForm").addEventListener("submit",async ev=>{
