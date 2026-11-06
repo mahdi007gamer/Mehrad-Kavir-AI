@@ -141,7 +141,15 @@
       <section class="page" id="page-security">
         <div class="page-head"><div><span class="eyebrow">SECURITY & GOVERNANCE</span><h1>امنیت و اتصالات<span class="accent">.</span></h1><p>وضعیت سرویس‌ها و تاریخچه اقدامات حساس.</p></div></div>
         <div class="columns">
-          <div class="panel"><h3>یکپارچه‌سازی سرویس‌ها</h3><div id="integrationCards"></div><div class="notice">کلیدهای OpenAI و Meta فقط از طریق متغیرهای محیطی سرور تعریف می‌شوند و هرگز در پنل قابل خواندن نیستند.</div></div>
+          <div class="panel"><h3>یکپارچه‌سازی سرویس‌ها</h3><div id="integrationCards"></div><div class="notice">کلیدهای OpenAI و Meta فقط از طریق متغیرهای محیطی سرور تعریف می‌شوند و هرگز در پنل قابل خواندن نیستند.</div>
+            <form id="passwordForm" class="stack" style="margin-top:24px">
+              <h3>تغییر رمز حساب</h3>
+              <label>رمز فعلی</label>
+              <input type="password" name="current_password" autocomplete="current-password" required>
+              <label>رمز جدید (حداقل ۱۶ نویسه)</label>
+              <input type="password" name="new_password" minlength="16" maxlength="200" autocomplete="new-password" required>
+              <button type="submit" class="btn ghost">تغییر رمز و خروج از تمام نشست‌ها</button>
+            </form></div>
           <div class="panel"><h3>ردپای حسابرسی</h3><div id="auditRecords" class="records"></div></div>
         </div>
       </section>
