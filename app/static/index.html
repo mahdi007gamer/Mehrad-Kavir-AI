@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#070d1d">
+  <meta name="description" content="Mehrad Kavir AI — مرکز فرماندهی هوشمند برند مهراد کویر">
+  <title>Mehrad Kavir AI | مرکز فرماندهی</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <div class="ambient a1"></div><div class="ambient a2"></div>
+  <div id="loginView" class="login-view hidden">
+    <form id="loginForm" class="login-card">
+      <div class="logo-mark big">M<span>✦</span></div>
+      <span class="eyebrow">MEHRAD KAVIR • AI SYSTEM</span>
+      <h1>ورود به مرکز فرماندهی</h1>
+      <p class="muted">دستیار سازمانی خصوصی مهراد کویر</p>
+      <label for="loginEmail">ایمیل مدیر</label>
+      <input id="loginEmail" type="email" autocomplete="username" required>
+      <label for="loginPassword">رمز عبور</label>
+      <input id="loginPassword" type="password" autocomplete="current-password" required>
+      <button class="btn primary" type="submit">ورود امن ←</button>
+      <div id="loginError" class="error" role="alert"></div>
+      <p class="micro">اطلاعات ورود را فقط از فایل خصوصی نصب دریافت کنید.</p>
+    </form>
+  </div>
+  <div id="appShell" class="shell hidden">
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="صفحه اصلی مهراد کویر AI">
+        <div class="logo-mark">M<span>✦</span></div>
+        <div><strong>Mehrad Kavir</strong><small>AI COMMAND CENTER</small></div>
+      </a>
+      <div class="side-divider"></div>
+      <p class="side-label">داشبورد مدیریتی</p>
+      <nav id="nav">
+        <button class="nav-link active" data-page="dashboard"><span>◈</span> نمای کلی</button>
+        <button class="nav-link" data-page="inbox"><span>✉</span> صندوق هوشمند <em id="navPending">0</em></button>
+        <button class="nav-link" data-page="knowledge"><span>▦</span> دانش برند</button>
+        <button class="nav-link" data-page="memory"><span>◇</span> حافظه و یادگیری</button>
+        <button class="nav-link" data-page="content"><span>✧</span> استودیو محتوا</button>
+        <button class="nav-link" data-page="security"><span>▣</span> امنیت و اتصالات</button>
+      </nav>
+      <div class="side-bottom">
+        <div class="secure-indicator"><i></i> HUMAN-IN-THE-LOOP</div>
+        <div class="sidebar-caption">هیچ پاسخ زنده‌ای بدون تأیید ارسال نمی‌شود.</div>
+        <div class="account"><div class="avatar">MK</div><div class="user-info"><b id="userEmail">Admin</b><small id="userRole">مدیر سیستم</small></div><button id="logoutBtn" title="خروج">↪</button></div>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div class="crumb">پنل مدیریتی <span>/</span> <b id="currentPageName">نمای کلی</b></div>
+        <div class="top-actions">
+          <div class="pill" id="metaBadge"><i class="status-dot"></i> اتصال اینستاگرام</div>
+          <div class="pill" id="aiBadge"><i class="status-dot"></i> مغز AI</div>
+          <time id="clock"></time>
+        </div>
+      </header>
+      <div id="flash" class="flash hidden" role="status"></div>
+      <section class="page active" id="page-dashboard">
+        <div class="page-head">
+          <div><span class="eyebrow">INTELLIGENCE OVERVIEW</span><h1>مرکز فرماندهی برند<span class="accent">.</span></h1><p>کنترل پیام‌ها، دانش برند و تولید محتوا در یک فضای یکپارچه.</p></div>
+          <button class="btn ghost" id="refreshBtn">↻ به‌روزرسانی</button>
+        </div>
+        <div class="hero">
+          <div class="hero-copy"><div class="hero-tag">◉ BRAND INTELLIGENCE ACTIVE</div>
+            <h2>مهراد کویر، هوشمندتر<br><span>در هر تعامل.</span></h2>
+            <p>هر پاسخ بر پایه دانش تأییدشده؛ هر اصلاح با نظارت مدیر. فناوری در خدمت دقت مهندسی.</p>
+            <button class="btn primary" data-goto="content">ساخت سناریوی جدید ↗</button>
+          </div>
+          <div class="hero-orb"><div class="orb-ring r1"></div><div class="orb-ring r2"></div><div class="orb-center">MK<span>AI</span></div></div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat"><div class="stat-icon">✉</div><p>گفتگوهای ثبت‌شده</p><strong id="statThreads">—</strong><small>دایرکت و کامنت</small></div>
+          <div class="stat"><div class="stat-icon">◉</div><p>پاسخ‌های منتظر تأیید</p><strong id="statDrafts">—</strong><small>نیازمند اقدام کارشناس</small></div>
+          <div class="stat"><div class="stat-icon">▦</div><p>دانش‌های تأییدشده</p><strong id="statKnowledge">—</strong><small>مراجع معتبر مغز AI</small></div>
+          <div class="stat"><div class="stat-icon">✧</div><p>سناریوهای تولیدشده</p><strong id="statScenarios">—</strong><small>آرشیو استودیو</small></div>
+        </div>
+        <div class="columns">
+          <div class="panel"><div class="panel-title"><h3>مسیر فعالیت سیستم</h3><span class="subtle">آخرین رویدادها</span></div><div id="activityFeed" class="activity-list"></div></div>
+          <div class="panel"><div class="panel-title"><h3>وضعیت عملیاتی</h3><span class="subtle">بررسی لحظه‌ای</span></div><div class="health-row"><span>پایگاه داده و سرور</span><b class="good">● فعال</b></div><div class="health-row"><span>پیشنهادهای AI</span><b id="aiHealth">—</b></div><div class="health-row"><span>ارتباط Meta</span><b id="metaHealth">—</b></div><div class="health-row"><span>ارسال خودکار</span><b>غیرفعال / ایمن</b></div><div class="notice">حفاظت پیش‌فرض: درخواست‌های مشتریان نمی‌توانند قوانین داخلی را تغییر دهند.</div></div>
+        </div>
+      </section>
+      <section class="page" id="page-inbox">
+        <div class="page-head"><div><span class="eyebrow">SMART COMMUNICATION</span><h1>صندوق پیام هوشمند<span class="accent">.</span></h1><p>بررسی پیشنهادها، اصلاح پاسخ و ارسال فقط پس از تأیید.</p></div><button class="btn ghost" id="inboxRefresh">↻ دریافت جدید</button></div>
+        <div class="inbox-grid">
+          <div class="panel thread-panel"><h3>گفتگوها</h3><div id="threadsList" class="thread-list"><div class="empty">هنوز پیامی ثبت نشده.</div></div></div>
+          <div class="panel conversation"><div class="panel-title"><h3 id="threadTitle">یک گفتگو انتخاب کنید</h3><span id="threadKind" class="chip">—</span></div><div id="conversationMessages" class="messages"><div class="empty">پیام‌ها و پیش‌نویس‌ها اینجا نمایش داده می‌شوند.</div></div></div>
+        </div>
+        <div class="panel demo-panel"><div class="panel-title"><h3>محیط آزمایشی دایرکت و کامنت</h3><span class="chip">بدون ارسال خارجی</span></div>
+          <form id="demoForm" class="form-grid">
+            <div><label>نام مخاطب</label><input name="name" placeholder="مثلاً: سرمایه‌گذار نیروگاه" required minlength="2" maxlength="100"></div>
+            <div><label>نوع گفتگو</label><select name="kind"><option value="dm">دایرکت</option><option value="comment">کامنت</option></select></div>
+            <div class="full"><label>متن پیام</label><textarea name="text" rows="3" placeholder="سلام، برای نیروگاه سه مگاواتی قیمت سازه چقدر می‌شه؟" required minlength="2" maxlength="2800"></textarea></div>
+            <button class="btn primary" type="submit">ثبت پیام و تولید پیش‌نویس ←</button>
+          </form>
+          <p class="micro">پردازش پیش‌نویس توسط Worker انجام می‌شود؛ برای مشاهده نتیجه کمی بعد صندوق را تازه‌سازی کنید.</p>
+        </div>
+      </section>
+      <section class="page" id="page-knowledge">
+        <div class="page-head"><div><span class="eyebrow">VERIFIED KNOWLEDGE</span><h1>پایگاه دانش برند<span class="accent">.</span></h1><p>تنها اسناد تأییدشده وارد زمینه پاسخ‌گویی هوش مصنوعی می‌شوند.</p></div></div>
+        <div class="columns knowledge-grid">
+          <div class="panel"><h3>ثبت اطلاعات جدید</h3><form id="knowledgeForm" class="stack">
+            <label>عنوان سند</label><input name="title" maxlength="150" minlength="4" required placeholder="مثلاً: الزامات استعلام سازه کوبشی">
+            <label>دسته‌بندی</label><select name="category"><option value="engineering">مهندسی</option><option value="brand">هویت برند</option><option value="sales">فروش</option><option value="faq">سؤالات متداول</option><option value="policy">سیاست سازمانی</option><option value="content">تولید محتوا</option><option value="other">سایر</option></select>
+            <label>محتوای مستند</label><textarea name="body" rows="8" minlength="20" maxlength="10000" required placeholder="فقط اطلاعات معتبر و قابل بررسی را درج کنید."></textarea>
+            <button class="btn primary" type="submit">ثبت برای تأیید مدیر</button></form>
+          </div>
+          <div class="panel"><div class="panel-title"><h3>اسناد ثبت‌شده</h3><small id="knowledgeCount">—</small></div><div id="knowledgeList" class="records"></div></div>
+        </div>
+      </section>
+      <section class="page" id="page-memory">
+        <div class="page-head"><div><span class="eyebrow">GOVERNED LEARNING</span><h1>حافظه و یادگیری<span class="accent">.</span></h1><p>بازخوردهای خود را به قوانین قابل بررسی و نسخه‌بندی تبدیل کنید.</p></div></div>
+        <div class="columns knowledge-grid">
+          <div class="panel"><h3>پیشنهاد یک قانون جدید</h3><form id="ruleForm" class="stack">
+            <label>عنوان</label><input name="title" placeholder="مثلاً: ساخت هوک‌های تصویری" minlength="4" maxlength="150" required>
+            <label>بخش تخصصی</label><select name="scope"><option value="global">تمام نقش‌ها</option><option value="sales">فروش</option><option value="engineering">مهندسی</option><option value="support">پشتیبانی</option><option value="content">محتوا</option></select>
+            <label>اصلاح یا اصل یادگرفته‌شده</label><textarea name="instruction" rows="6" minlength="10" maxlength="1500" required placeholder="مثلاً: شروع هر ریلز با یک صحنه بصری قابل اجرا و چالش مرتبط با مخاطب باشد..."></textarea>
+            <button class="btn primary" type="submit">ارسال برای بررسی</button></form>
+            <div class="notice">قانون جدید تا زمان تأیید مدیر هیچ اثری بر رفتار AI ندارد.</div>
+          </div>
+          <div class="panel"><div class="panel-title"><h3>قوانین و بازخوردها</h3><small id="rulesCount">—</small></div><div id="rulesList" class="records"></div></div>
+        </div>
+      </section>
+      <section class="page" id="page-content">
+        <div class="page-head"><div><span class="eyebrow">CREATIVE STRATEGY LAB</span><h1>استودیو سناریونویسی<span class="accent">.</span></h1><p>ایده‌پردازی تخصصی با شناخت فنی صنعت خورشیدی و حافظه برند.</p></div></div>
+        <div class="columns content-grid">
+          <div class="panel"><h3>بریف تولید محتوا</h3>
+            <form id="scenarioForm" class="stack">
+              <label>موضوع ریلز یا استوری</label><textarea name="topic" rows="3" minlength="5" maxlength="300" required placeholder="تفاوت مونوفیشیال و بایفیشیال؛ اشتباهات انتخاب سازه..."></textarea>
+              <label>مخاطب هدف</label><select name="audience"><option value="سرمایه‌گذار نیروگاه">سرمایه‌گذار نیروگاه</option><option value="مهندس طراح">مهندس طراح</option><option value="پیمانکار EPC">پیمانکار EPC</option><option value="مدیر خرید">مدیر خرید</option><option value="مخاطب عمومی">مخاطب عمومی</option></select>
+              <label>سبک هوک</label><select name="style"><option value="چالشی و غافلگیرکننده">چالشی و غافلگیرکننده</option><option value="سینمایی و تصویری">سینمایی و تصویری</option><option value="مهندسی و داده‌محور">مهندسی و داده‌محور</option><option value="داستان‌محور">داستان‌محور</option></select>
+              <button class="btn primary" type="submit">✧ تولید سناریوی تخصصی</button>
+            </form>
+          </div>
+          <div class="panel output-panel"><div class="panel-title"><h3>نتیجه تولید</h3><button class="btn text-btn" id="copyScenario" disabled>کپی متن</button></div><div id="scenarioOutput" class="script-output empty">برای شروع یک بریف وارد کنید.</div></div>
+        </div>
+        <div class="panel"><div class="panel-title"><h3>آرشیو سناریوها</h3><span class="subtle">قابل بازیابی</span></div><div id="scenarioList" class="records scenario-list"></div></div>
+      </section>
+      <section class="page" id="page-security">
+        <div class="page-head"><div><span class="eyebrow">SECURITY & GOVERNANCE</span><h1>امنیت و اتصالات<span class="accent">.</span></h1><p>وضعیت سرویس‌ها و تاریخچه اقدامات حساس.</p></div></div>
+        <div class="columns">
+          <div class="panel"><h3>یکپارچه‌سازی سرویس‌ها</h3><div id="integrationCards"></div><div class="notice">کلیدهای OpenAI و Meta فقط از طریق متغیرهای محیطی سرور تعریف می‌شوند و هرگز در پنل قابل خواندن نیستند.</div></div>
+          <div class="panel"><h3>ردپای حسابرسی</h3><div id="auditRecords" class="records"></div></div>
+        </div>
+      </section>
+      <footer>MEHRAD KAVIR AI · VERSION 0.1.0 · PRIVACY-FIRST · HUMAN APPROVAL REQUIRED</footer>
+    </main>
+  </div>
+</body>
+</html>
