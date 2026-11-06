@@ -145,12 +145,12 @@ def website_import(job_id):
         return created
 
 def ig_fetch(path,params=None):
-    if not settings.META_ACCESS_TOKEN or not settings.META_IG_USER_ID:
+    if not settings.effective('META_ACCESS_TOKEN') or not settings.effective('META_IG_USER_ID'):
         raise RuntimeError("Meta access token or IG account ID missing")
-    endpoint=f"https://graph.instagram.com/{settings.META_GRAPH_VERSION}/{path.lstrip('/')}"
+    endpoint=f"https://graph.instagram.com/{settings.effective('META_GRAPH_VERSION')}/{path.lstrip('/')}"
     with httpx.Client(timeout=18,trust_env=False,follow_redirects=False) as client:
         r=client.get(endpoint,params=params or {},headers={
-            "Authorization":"Bearer "+settings.META_ACCESS_TOKEN,
+            "Authorization":"Bearer "+settings.effective('META_ACCESS_TOKEN'),
             "Accept":"application/json"})
     if r.status_code!=200:
         # Do not expose response body: it might include provider diagnostics or sensitive data.
@@ -158,7 +158,7 @@ def ig_fetch(path,params=None):
     return r.json()
 
 def instagram_media_import(job_id):
-    items=ig_fetch(f"{settings.META_IG_USER_ID}/media",{
+    items=ig_fetch(f"{settings.effective('META_IG_USER_ID')}/media",{
         "fields":"id,caption,permalink,media_type,timestamp",
         "limit":50
     }).get("data",[])[:50]
@@ -198,7 +198,7 @@ def instagram_insights_import(job_id):
     with db.read() as con:
         media=[dict(x) for x in con.execute(
             "SELECT media_id,media_type FROM instagram_media ORDER BY timestamp DESC LIMIT 12").fetchall()]
-    wanted=[("account",settings.META_IG_USER_ID,["views","reach","profile_views"],"day")]
+    wanted=[("account",settings.effective('META_IG_USER_ID'),["views","reach","profile_views"],"day")]
     for item in media:
         wanted.append(("media",item["media_id"],["views","reach","saved","shares"],"lifetime"))
     for kind,identifier,metrics,period in wanted:
