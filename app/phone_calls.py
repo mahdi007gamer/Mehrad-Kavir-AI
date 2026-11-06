@@ -140,11 +140,35 @@ def _status(call_id,status,code=None):
             (status,db.now(),code,call_id))
         db.audit(con,"voice-bridge","call_"+status,"phone_calls",call_id,{"code":code})
 
+def _explicit_contact_consent(parts):
+    """Do not let model-only claims manufacture consent.
+
+    Requires an assistant request about recording details for follow-up,
+    followed promptly by an affirmative caller response. A casual 'yes'
+    to a project question is insufficient.
+    """
+    affirmative=("بله","آره","اره","حتما","حتماً","موافقم","اجازه میدم","اجازه می‌دم","مشکلی نیست")
+    negative=("نه","خیر","نمی‌خوام","نمیدم","نمی‌دم","رضایت ندارم","ثبت نکن","نیست")
+    for i,(speaker,text) in enumerate(parts):
+        if speaker!="assistant" or "ثبت" not in text or not any(
+            word in text for word in ("اجازه","رضایت","موافق","پیگیری")):
+            continue
+        for next_speaker,next_text in parts[i+1:i+4]:
+            if next_speaker!="caller":continue
+            clean=" ".join(next_text.replace("ي","ی").split()).lower()
+            if any(x in clean for x in negative):
+                break
+            if any(x in clean for x in affirmative):
+                return True
+            break
+    return False
+
 def _store_consented_proposal(call_id,phone_number,parts):
     """Invoked after hangup; model output is never written to CRM directly."""
     transcript="\n".join(("[مشتری]" if speaker=="caller" else "[دستیار]")+" "+line
                          for speaker,line in parts)[:MAX_TRANSCRIPT_CHARS]
     if len(transcript)<30:return
+    if not _explicit_contact_consent(parts):return
     result=extract_lead_proposal(transcript)
     if not result.get("consent_to_contact"):
         return
