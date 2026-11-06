@@ -118,8 +118,12 @@ def audit(db, actor, action, entity, entity_id, metadata=None):
 def init_db():
     from .security import hash_password
     settings.check_startup()
+    schema_db = connect()
+    try:
+        schema_db.executescript(SCHEMA)
+    finally:
+        schema_db.close()
     with tx() as db:
-        db.executescript(SCHEMA)
         count = db.execute("SELECT COUNT(*) FROM users").fetchone()[0]
         if not count:
             db.execute("INSERT INTO users(email,password_hash,role,created_at) VALUES(?,?,?,?)",
