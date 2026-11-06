@@ -49,7 +49,7 @@
     activePage=page;
     $$(".page").forEach(x=>x.classList.toggle("active",x.id==="page-"+page));
     $$(".nav-link").forEach(x=>x.classList.toggle("active",x.dataset.page===page));
-    txt("#currentPageName", ({dashboard:"نمای کلی",inbox:"صندوق پیام",insights:"تحلیل پیج",crm:"مدیریت استعلام‌ها",automation:"پاسخ‌های خودکار",knowledge:"دانش برند",memory:"حافظه و یادگیری",content:"استودیو محتوا",security:"امنیت و اتصالات"})[page]);
+    txt("#currentPageName", ({dashboard:"نمای کلی",inbox:"صندوق پیام",insights:"تحلیل پیج",crm:"مدیریت استعلام‌ها",phone:"منشی تلفنی",automation:"پاسخ‌های خودکار",knowledge:"دانش برند",memory:"حافظه و یادگیری",content:"استودیو محتوا",security:"امنیت و اتصالات"})[page]);
     window.scrollTo({top:0,behavior:"smooth"});
     refreshCurrent();
   }
@@ -59,6 +59,7 @@
       else if (activePage === "inbox") await inbox();
       else if (activePage === "insights") await insights();
       else if (activePage === "crm") await crm();
+      else if (activePage === "phone") await phone();
       else if (activePage === "automation") await automation();
       else if (activePage === "knowledge") await knowledge();
       else if (activePage === "memory") await rules();
@@ -289,6 +290,7 @@
     txt("#metaTestResult",d.meta.last_test?
       ("آخرین تست حساب: "+(d.meta.last_test.status==="ok"?"موفق":"ناموفق")+" • "+fmt(d.meta.last_test.checked_at)):"حساب هنوز آزمایش نشده");
     await loadUpdates();
+    await loadProviders();
     const audit=await api("/api/audit");
     $("#auditRecords").innerHTML=audit.length?audit.map(x=>'<div class="record"><div class="record-head"><h4>'+e(x.action)+'</h4><small>'+e(fmt(x.created_at))+'</small></div><small>'+e(x.actor)+" · "+e(x.entity)+" #"+e(x.entity_id)+'</small></div>').join(""):feedEmpty("لاگی ثبت نشده است.");
   }
@@ -307,6 +309,99 @@
         button.disabled=false;button.dataset.sha=r.latest_sha;
       }
     }catch(err){status.textContent="دریافت نسخه GitHub ناموفق بود؛ اتصال اینترنت یا GitHub را بررسی کنید.";button.disabled=true;}
+  }
+
+  function setFormValue(form,name,value) {
+    const el=form?.elements?.namedItem(name);
+    if(el && !el.matches(":focus") && value!==null && value!==undefined)
+      el.value=value;
+  }
+  async function loadProviders(){
+    const d=await api("/api/providers");
+    const g=$("#geminiConnectForm"),t=$("#telephonyConnectForm");
+    for(const [key,name] of Object.entries({
+      GEMINI_MODEL:"text_model",GEMINI_LIVE_MODEL:"live_model",
+      GEMINI_TTS_MODEL:"tts_model",GEMINI_VOICE:"voice"}))
+      setFormValue(g,name,d.gemini.fields[key]?.value);
+    g.elements.namedItem("api_key").placeholder=
+      d.gemini.fields.GEMINI_API_KEY?.configured?"کلید ثبت شده؛ برای حفظ خالی بگذارید":"Google AI Studio API Key";
+    for(const [key,name] of Object.entries({
+      TWILIO_ACCOUNT_SID:"account_sid",PHONE_PUBLIC_BASE_URL:"public_base_url"}))
+      setFormValue(t,name,d.telephony.fields[key]?.value);
+    t.elements.namedItem("enabled").checked=d.telephony.enabled;
+    t.elements.namedItem("auth_token").placeholder=
+      d.telephony.fields.TWILIO_AUTH_TOKEN?.configured?"توکن قبلاً ثبت شده؛ برای حفظ خالی بگذارید":"Twilio Auth Token";
+    $("#aiProviderSelect").value=d.selected;
+    $("#geminiTestResult").textContent=d.gemini.test?
+      ("آخرین تست Google AI: "+(d.gemini.test.status==="ok"?"موفق":"ناموفق")+" · "+fmt(d.gemini.test.checked_at)):
+      "Google Gemini هنوز تست نشده است.";
+    $("#telephonyTestResult").textContent=d.telephony.test?
+      ("آخرین تست حساب Twilio: "+(d.telephony.test.status==="ok"?"موفق":"ناموفق")+
+       " · "+fmt(d.telephony.test.checked_at)+"؛ آزمایش شماره و تماس واقعی همچنان لازم است."):
+      "حساب Twilio هنوز تست نشده است؛ برای تماس واقعی شماره و HTTPS/WSS نیز لازم است.";
+  }
+
+  async function phone(){
+    const [calls,providers]=await Promise.all([api("/api/voice/calls"),api("/api/providers")]);
+    const ready=providers.gemini.text_ready&&providers.telephony.ready&&providers.telephony.enabled;
+    txt("#phoneStatus",ready?
+      "تنظیمات دریافت تماس فعال است؛ برای مکالمه واقعی باید شماره Twilio، Webhook عمومی و مدل Gemini Live را عملیاتی تست کنید.":
+      "این قابلیت فعلاً پذیرای تماس واقعی نیست. ابتدا کلید Google AI و تنظیمات Twilio را در بخش امنیت و اتصالات وارد کنید.");
+    $("#phoneCallsList").innerHTML=calls.length?calls.map(x=>
+      '<div class="record"><div class="record-head"><h4>تماس #'+Number(x.id)+'</h4>'+
+       chip(x.status,x.status==="ended"?"success":x.status==="failed"?"danger":"warning")+'</div>'+
+       '<small>'+e(fmt(x.started_at))+(x.duration_seconds?" · "+Number(x.duration_seconds)+" ثانیه":"")+
+       '</small><p>ثبت مشخصات با رضایت: '+(x.consent_to_contact?"بله":"خیر")+'</p>'+
+       (x.proposal_id?'<button class="btn small ghost" data-call-proposal="'+Number(x.proposal_id)+'">مشاهده درخواست و بررسی</button>':
+         '<small>هنوز پرونده پیشنهادی قابل بررسی وجود ندارد.</small>')+'</div>').join(""):
+       feedEmpty("هنوز تماس واقعی در سیستم ثبت نشده است.");
+  }
+
+  async function openCallProposal(id){
+    const info=await api("/api/voice/proposals/"+id);
+    const vals=info.details||{};
+    const heading='<div class="record"><div class="record-head"><h4>پرونده تماس #'+Number(id)+'</h4>'+
+       chip(statusText[info.state]||info.state,info.state==="pending"?"warning":"success")+'</div>';
+    const fields=Object.entries({
+      "نام":vals.caller_name,"شرکت":vals.company,"شهر پروژه":vals.project_city,
+      "ظرفیت MW":vals.capacity_mw,"فونداسیون":vals.foundation,"آرایش پنل":vals.panel_layout,
+      "شماره تماس":info.phone,"شرح درخواست":vals.request_summary,
+      "میزان اطمینان":vals.confidence});
+    const body=fields.filter(([,v])=>v!==null&&v!==undefined&&String(v).trim())
+      .map(([key,value])=>'<div class="health-row"><span>'+e(key)+'</span><b>'+e(value)+'</b></div>').join("");
+    const controls=info.state==="pending"?
+      '<div class="button-row"><button class="btn primary small" data-review-call="'+Number(id)+':approved">تأیید و ثبت در CRM</button>'+
+      '<button class="btn danger small" data-review-call="'+Number(id)+':rejected">رد درخواست</button></div>':"";
+    $("#phoneProposalDetails").innerHTML=heading+body+
+      '<details><summary>رونوشت تماس پس از رضایت</summary><p class="call-transcript">'+e(info.transcript)+'</p></details>'+
+      controls+'</div>';
+    $("#phoneProposalDetails").scrollIntoView({behavior:"smooth",block:"center"});
+  }
+
+  async function submitProvider(provider,form) {
+    const btn=form.querySelector("[type=submit]");btn.disabled=true;
+    try{
+      const payload=getForm(form);
+      const secrets=provider==="gemini"?["api_key"]:["auth_token"];
+      for(const name of secrets)if(!payload[name])delete payload[name];
+      if(provider==="telephony")payload.enabled=Boolean(form.elements.namedItem("enabled").checked);
+      await api("/api/providers/"+provider,{method:"POST",body:payload});
+      for(const field of secrets)form.elements.namedItem(field).value="";
+      notify("تنظیمات "+provider+" با رمزنگاری ذخیره شد. حالا اتصال را آزمایش کنید.");
+      await loadProviders();
+    }catch(err){notify(err.message,true);}
+    finally{btn.disabled=false;}
+  }
+
+  async function testProvider(provider,btn){
+    btn.disabled=true;
+    try{
+      const result=await api("/api/providers/"+provider+"/test",{method:"POST"});
+      notify(provider==="gemini"?"کلید و مدل متن گوگل تأیید شد. صدای Live را جداگانه تست کنید.":
+        "اعتبارسنجی حساب Twilio موفق بود. شماره واقعی و مسیر صوت هنوز نیازمند تست‌اند.");
+      await loadProviders();
+    }catch(err){notify("خطای اتصال: "+err.message,true);}
+    finally{btn.disabled=false;}
   }
 
   async function submitIntegration(provider,form) {
@@ -386,6 +481,34 @@
       catch(err){notify(err.message,true);}
       return;
     }
+    const openProposal=ev.target.closest("[data-call-proposal]");
+    if(openProposal){try{await openCallProposal(Number(openProposal.dataset.callProposal));}
+      catch(err){notify(err.message,true);}return;}
+    const reviewCall=ev.target.closest("[data-review-call]");
+    if(reviewCall){
+      const [id,decision]=reviewCall.dataset.reviewCall.split(":");
+      if(!confirm(decision==="approved"?
+          "با تأیید این پرونده، اطلاعات پیشنهادی هوش مصنوعی به CRM وارد می‌شود. مشخصات را بررسی کرده‌اید؟":
+          "پرونده پیشنهادی رد شود؟"))return;
+      try{
+        await api("/api/voice/proposals/"+id+"/review",{method:"POST",body:{decision}});
+        notify("نتیجه بررسی تماس ثبت شد.");
+        await phone();await openCallProposal(Number(id));
+      }catch(err){notify(err.message,true);}return;
+    }
+    const newTester=ev.target.closest("[data-test-provider]");
+    if(newTester){await testProvider(newTester.dataset.testProvider,newTester);return;}
+    const discProvider=ev.target.closest("[data-disconnect-provider]");
+    if(discProvider){
+      const provider=discProvider.dataset.disconnectProvider;
+      if(!confirm("اتصال "+provider+" از صندوق کلیدها قطع شود؟ توکن را در سرویس اصلی نیز لغو کنید."))return;
+      discProvider.disabled=true;
+      try{
+        await api("/api/providers/"+provider+"/disconnect",{method:"POST"});
+        notify("اتصال قطع شد.");await loadProviders();
+      }catch(err){notify(err.message,true);}finally{discProvider.disabled=false;}
+      return;
+    }
     const archive=ev.target.closest("[data-scenario]");
     if(archive){lastScenario=window.__scenarioCache?.[archive.dataset.scenario]||"";txt("#scenarioOutput",lastScenario);$("#scenarioOutput").classList.remove("empty");$("#copyScenario").disabled=!lastScenario;}
   });
@@ -447,6 +570,42 @@
       notify("آپدیت تأیید و در صف عامل محلی قرار گرفت. تا پایان نصب وضعیت سرویس را بررسی کنید.");
       await loadUpdates();
     }catch(err){notify(err.message,true);await loadUpdates();}
+  });
+  $("#geminiConnectForm").addEventListener("submit",ev=>{
+    ev.preventDefault();submitProvider("gemini",ev.target);
+  });
+  $("#telephonyConnectForm").addEventListener("submit",ev=>{
+    ev.preventDefault();submitProvider("telephony",ev.target);
+  });
+  $("#saveAiProvider").addEventListener("click",async ev=>{
+    ev.target.disabled=true;
+    try{
+      const provider=$("#aiProviderSelect").value;
+      await api("/api/providers/select",{method:"POST",body:{provider}});
+      notify("مغز پیش‌فرض روی "+provider+" تنظیم شد.");
+    }catch(err){notify(err.message,true);}
+    finally{ev.target.disabled=false;}
+  });
+  $("#phoneRefreshBtn").addEventListener("click",()=>phone().catch(err=>notify(err.message,true)));
+  $("#voicePreviewForm").addEventListener("submit",async ev=>{
+    ev.preventDefault();
+    const btn=ev.target.querySelector("[type=submit]");
+    btn.disabled=true;txt("#voicePreviewResult","در حال درخواست تولید نمونه صوت...");
+    try{
+      const response=await fetch("/api/voice/preview",{
+        method:"POST",credentials:"same-origin",
+        headers:{"Content-Type":"application/json","X-CSRF-Token":csrf},
+        body:JSON.stringify(getForm(ev.target))
+      });
+      if(!response.ok)throw Error("Google TTS پاسخ معتبر نداد. کلید، مدل و دسترسی API را بررسی کنید.");
+      const audio=$("#voicePreviewAudio");
+      if(audio.dataset.lastUrl)URL.revokeObjectURL(audio.dataset.lastUrl);
+      const url=URL.createObjectURL(await response.blob());
+      audio.src=url;audio.dataset.lastUrl=url;audio.classList.remove("hidden");
+      txt("#voicePreviewResult","نمونه صوتی تولید شد. برای شنیدن دکمه پخش را بزنید.");
+      await audio.play().catch(()=>{});
+    }catch(err){notify(err.message,true);txt("#voicePreviewResult",err.message);}
+    finally{btn.disabled=false;}
   });
   $("#openaiConnectForm").addEventListener("submit",ev=>{ev.preventDefault();submitIntegration("openai",ev.target);});
   $("#metaConnectForm").addEventListener("submit",ev=>{ev.preventDefault();submitIntegration("meta",ev.target);});
