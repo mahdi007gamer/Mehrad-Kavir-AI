@@ -31,6 +31,10 @@ from .updates import router as update_router
 app.include_router(integration_router)
 app.include_router(feature_router)
 app.include_router(update_router)
+from .google_voice_settings import router as google_voice_router
+from .phone_calls import router as phone_calls_router
+app.include_router(google_voice_router)
+app.include_router(phone_calls_router)
 EDITOR = role_required("owner","editor")
 OWNER = role_required("owner")
 
