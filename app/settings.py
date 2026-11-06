@@ -29,3 +29,8 @@ def check_startup():
         raise RuntimeError("BOOTSTRAP_ADMIN_PASSWORD must be at least 16 characters")
     if APP_ENV == "production" and not COOKIE_SECURE:
         raise RuntimeError("COOKIE_SECURE=true required in production (HTTPS)")
+
+# v0.2: only verified, explicitly enabled templates can trigger unattended sends.
+AUTO_REPLY_ENABLED = os.getenv("AUTO_REPLY_ENABLED","false").lower()=="true"
+APP_REVISION = os.getenv("APP_REVISION","unknown")
+UPDATE_CHANNEL = "https://api.github.com/repos/mahdi007gamer/Mehrad-Kavir-AI/commits/main"
