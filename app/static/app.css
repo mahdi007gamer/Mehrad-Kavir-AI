@@ -30,3 +30,19 @@ footer{text-align:center;color:#4d6686;font-size:10px;letter-spacing:1px;directi
 .brand-logo-panel:focus-visible{outline:2px solid #006FFE;outline-offset:3px}
 @media(max-width:950px){.sidebar-logo-panel{width:62px;min-height:49px;padding:5px}.sidebar .brand-identity{display:none}}
 @media(max-width:650px){.sidebar-logo-panel{width:50px;min-height:40px;padding:4px}.brand{min-width:53px}.login-logo-panel{width:206px;min-height:150px}}
+
+/* Secure integrations (v0.2) */
+.integration-manager{min-width:0}
+.integration-form{margin-top:22px;padding:20px;border:1px solid rgba(174,184,194,.18);background:linear-gradient(145deg,rgba(0,111,254,.05),rgba(17,26,36,.36));border-radius:15px}
+.integration-form input{min-height:42px}
+.integration-form input[readonly]{background:#152333;color:#a6bbd5}
+.integration-form .micro{margin:1px 0 0;overflow-wrap:anywhere}
+.integration-form .micro a{color:#6ab9ff;text-decoration:underline}
+.provider-heading{display:flex;align-items:center;gap:12px;margin-bottom:9px}
+.provider-mark{height:42px;width:42px;display:grid;place-items:center;border-radius:12px;background:rgba(0,111,254,.12);color:#70b3ff;font-size:24px}
+.provider-heading b{display:block;font-size:14px}
+.provider-heading small{display:block;font-size:11px;color:#aeb8c2}
+.button-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+.button-row .btn{white-space:normal}
+#vaultStatus.err{border-right-color:#ff7287;background:rgba(255,114,135,.08);color:#ffcbd4}
+@media(max-width:650px){.integration-form{padding:14px}.button-row .btn{flex:1 1 130px}}

@@ -25,6 +25,12 @@ async def lifespan(_app):
 
 app = FastAPI(title="Mehrad Kavir AI", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=str(STATIC)), name="static")
+from .integrations import router as integration_router
+from .features import router as feature_router
+from .updates import router as update_router
+app.include_router(integration_router)
+app.include_router(feature_router)
+app.include_router(update_router)
 EDITOR = role_required("owner","editor")
 OWNER = role_required("owner")
 
@@ -128,8 +134,8 @@ def dashboard(user=Depends(user_for)):
 
 @app.get("/api/settings")
 def integration_status(user=Depends(OWNER)):
-    return {"openai_ready":settings.ai_ready(),"openai_model":settings.OPENAI_MODEL,
-        "instagram_ready":settings.meta_ready(),"instagram_account_configured":bool(settings.META_IG_USER_ID),
+    return {"openai_ready":settings.ai_ready(),"openai_model":settings.effective('OPENAI_MODEL'),
+        "instagram_ready":settings.meta_ready(),"instagram_account_configured":bool(settings.effective('META_IG_USER_ID')),
         "environment":settings.APP_ENV,
         "auto_send_enabled":False, "note":"All live Instagram sends require human approval."}
 
@@ -141,7 +147,7 @@ class KnowledgeIn(BaseModel):
 @app.get("/api/knowledge")
 def list_knowledge(user=Depends(user_for)):
     with db.read() as con:
-        return [dict(x) for x in con.execute("SELECT id,title,body,category,status,created_at,reviewed_at FROM knowledge ORDER BY id DESC LIMIT 300")]
+        return [dict(x) for x in con.execute("SELECT id,title,body,category,status,version,source_type,created_at,reviewed_at FROM knowledge ORDER BY id DESC LIMIT 300")]
 
 @app.post("/api/knowledge")
 def add_knowledge(data:KnowledgeIn,user=Depends(EDITOR)):
@@ -357,8 +363,8 @@ def audit_log(user=Depends(OWNER)):
 @app.get("/webhooks/instagram")
 def webhook_verify(request:Request):
     p=request.query_params
-    if p.get("hub.mode")=="subscribe" and settings.META_VERIFY_TOKEN and hmac.compare_digest(
-            p.get("hub.verify_token",""),settings.META_VERIFY_TOKEN):
+    if p.get("hub.mode")=="subscribe" and settings.effective('META_VERIFY_TOKEN') and hmac.compare_digest(
+            p.get("hub.verify_token",""),settings.effective('META_VERIFY_TOKEN')):
         return Response(content=p.get("hub.challenge",""),media_type="text/plain")
     raise HTTPException(403,"Verification failed")
 
@@ -376,7 +382,7 @@ async def webhook_receive(request:Request):
     body=await request.body()
     if len(body)>200_000:
         raise HTTPException(413,"Payload too large")
-    if not verify_webhook(body,request.headers.get("X-Hub-Signature-256",""),settings.META_APP_SECRET):
+    if not verify_webhook(body,request.headers.get("X-Hub-Signature-256",""),settings.effective('META_APP_SECRET')):
         raise HTTPException(403,"Invalid webhook signature")
     try:
         payload=json.loads(body)
@@ -386,7 +392,7 @@ async def webhook_receive(request:Request):
         return {"received":True}
     accepted=0
     for entry in payload.get("entry",[])[:30]:
-        if str(entry.get("id"))!=settings.META_IG_USER_ID:
+        if str(entry.get("id"))!=settings.effective('META_IG_USER_ID'):
             continue
         for event in entry.get("messaging",[])[:100]:
             msg=event.get("message") or {}

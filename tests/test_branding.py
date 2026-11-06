@@ -21,7 +21,7 @@ def test_brand_logo_used_in_app():
 def test_insights_does_not_invent_numbers():
     html=(ROOT/"app/static/index.html").read_text(encoding="utf8")
     js=(ROOT/"app/static/app.js").read_text(encoding="utf8")
-    assert "در انتظار داده واقعی" in html
-    assert "در انتظار اتصال رسمی Insights" in html
+    assert "مقدار ناموجود هرگز با صفر جایگزین نمی‌شود" in html
+    assert 'id="igViews"' in html and 'id="igReach"' in html
     assert 'activePage === "insights"' in js
-    assert "data.integration.meta" in js
+    assert 'api("/api/analytics")' in js and 'x.state==="available"' in js

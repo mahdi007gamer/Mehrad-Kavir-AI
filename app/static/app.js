@@ -49,7 +49,7 @@
     activePage=page;
     $$(".page").forEach(x=>x.classList.toggle("active",x.id==="page-"+page));
     $$(".nav-link").forEach(x=>x.classList.toggle("active",x.dataset.page===page));
-    txt("#currentPageName", ({dashboard:"نمای کلی",inbox:"صندوق پیام",insights:"تحلیل پیج",knowledge:"دانش برند",memory:"حافظه و یادگیری",content:"استودیو محتوا",security:"امنیت و اتصالات"})[page]);
+    txt("#currentPageName", ({dashboard:"نمای کلی",inbox:"صندوق پیام",insights:"تحلیل پیج",crm:"مدیریت استعلام‌ها",automation:"پاسخ‌های خودکار",knowledge:"دانش برند",memory:"حافظه و یادگیری",content:"استودیو محتوا",security:"امنیت و اتصالات"})[page]);
     window.scrollTo({top:0,behavior:"smooth"});
     refreshCurrent();
   }
@@ -58,6 +58,8 @@
       if (activePage === "dashboard") await dashboard();
       else if (activePage === "inbox") await inbox();
       else if (activePage === "insights") await insights();
+      else if (activePage === "crm") await crm();
+      else if (activePage === "automation") await automation();
       else if (activePage === "knowledge") await knowledge();
       else if (activePage === "memory") await rules();
       else if (activePage === "content") await scenarios();
@@ -79,12 +81,57 @@
   }
   function chip(label,kind="") {return '<span class="chip '+e(kind)+'">'+e(label)+'</span>';}
   async function insights() {
-    // There is intentionally no simulated metric source. This view does not claim real Insights integration.
-    const data = await api("/api/dashboard");
-    txt("#insightsStatus", data.integration.meta
-      ? "اتصال پایه Meta در تنظیمات ثبت شده، اما مجوز و همگام‌سازی Instagram Insights هنوز پیاده‌سازی نشده است."
-      : "اتصال Meta هنوز آماده نیست و ماژول جمع‌آوری Instagram Insights نیز در نقشه توسعه قرار دارد.");
+    const data=await api("/api/analytics");
+    const metrics=data.latest_metrics||[];
+    const account=(metric)=>{
+      const row=metrics.find(x=>x.entity_type==="account"&&x.name===metric&&x.state==="available");
+      return row?new Intl.NumberFormat("fa-IR").format(row.value):"—";
+    };
+    txt("#igViews",account("views"));
+    txt("#igReach",account("reach"));
+    txt("#igEngagement","—"); // Not computable without compatible engagement and reach observations.
+    const leads=data.leads_by_stage||{};
+    const qualified=Object.entries(leads).filter(([stage])=>["qualified","engineering","quotation","won"].includes(stage)).reduce((n,[,value])=>n+Number(value||0),0);
+    txt("#igQualifiedLeads",new Intl.NumberFormat("fa-IR").format(qualified));
+    const observed=metrics.filter(x=>x.state==="available");
+    txt("#insightsStatus", observed.length?
+      ("داده‌های معتبر دریافت شده: "+observed.length+" شاخص. آخرین Snapshot: "+fmt(observed[0].observed_at)+". منبع: Meta Instagram API") :
+      "هنوز آمار معتبر از Meta Instagram API ثبت نشده است. از «دانش برند» فهرست پست‌ها و سپس دریافت Insights را اجرا کنید.");
+    $("#igMediaList").innerHTML=data.media.length?data.media.map(x=>{
+      const observations=metrics.filter(m=>m.entity_type==="media"&&m.entity_id===x.media_id&&m.state==="available");
+      const view=observations.find(m=>m.name==="views");
+      return '<div class="record"><div class="record-head"><h4>'+e(x.media_type||"Post")+'</h4>'+
+        chip(view?"Views: "+view.value:"بدون آمار معتبر")+'</div><p>'+e((x.caption||"بدون کپشن").slice(0,380))+'</p>'+
+        '<small>'+e(fmt(x.timestamp))+' · آخرین دریافت: '+e(fmt(x.last_synced_at))+'</small>'+
+        (x.permalink?'<p><a href="'+e(x.permalink)+'" target="_blank" rel="noopener noreferrer">مشاهده رسانه در اینستاگرام</a></p>':"")+
+        '</div>';
+    }).join(""):feedEmpty("هنوز پست و ریلزی از Meta دریافت نشده است.");
   }
+
+  const leadStages={new:"جدید",qualifying:"تکمیل مشخصات",qualified:"واجد شرایط",engineering:"بررسی فنی",quotation:"پیش‌فاکتور",won:"موفق",lost:"ناموفق"};
+  async function crm(){
+    const entries=await api("/api/leads");
+    $("#leadsList").innerHTML=entries.length?entries.map(x=>
+      '<div class="record"><div class="record-head"><h4>'+e(x.name)+'</h4>'+chip(leadStages[x.stage]||x.stage)+'</div>'+
+      '<small>'+e(x.project_city||"مکان مشخص نشده")+' · '+e(x.capacity_mw===null?"ظرفیت نامعلوم":x.capacity_mw+" مگاوات")+
+      ' · '+e(fmt(x.updated_at))+'</small><p>'+e(x.details||"نیازمند تکمیل مشخصات")+'</p>'+
+      '<label>مرحله پیگیری</label><select data-lead-stage="'+Number(x.id)+'">'+
+      Object.entries(leadStages).map(([key,label])=>'<option value="'+key+'"'+(key===x.stage?" selected":"")+'>'+e(label)+'</option>').join("")+
+      '</select></div>').join(""):feedEmpty("هنوز استعلامی ثبت نشده است.");
+  }
+
+  async function automation(){
+    const [state,policies]=await Promise.all([api("/api/automation/status"),api("/api/automation/policies")]);
+    txt("#autoPolicyStatus",state.server_enabled?
+      (state.meta_ready?"کلید فعال‌سازی سرور روشن است؛ قوانین محدود می‌توانند بررسی شوند.":"کلید سرور روشن است، اما Meta هنوز آماده نیست."):
+      "کلید توقف سرور فعال است؛ AUTO_REPLY_ENABLED=false. هیچ پاسخ خودکاری ارسال نمی‌شود.");
+    $("#autoPoliciesList").innerHTML=policies.length?policies.map(x=>
+      '<div class="record"><div class="record-head"><h4>'+e(x.keyword)+'</h4>'+chip(x.enabled?"فعال":"خاموش",x.enabled?"success":"")+'</div>'+
+      '<p>'+e(x.template)+'</p><button class="btn small '+(x.enabled?"danger":"ghost")+
+      '" data-toggle-policy="'+Number(x.id)+':'+(x.enabled?"false":"true")+'">'+(x.enabled?"غیرفعال کردن":"فعال‌کردن")+
+      '</button></div>').join(""):feedEmpty("قانونی تعریف نشده است.");
+  }
+
   async function inbox() {
     const threads=await api("/api/threads");
     const list=$("#threadsList");
@@ -130,14 +177,62 @@
     const title=e(obj.title);
     const body=e(type==="rule"?obj.instruction:obj.body);
     const state=obj.status;
-    const button=(state==="pending"&&user?.role==="owner")?'<div class="record-actions"><button class="btn small primary" data-review="'+type+':'+Number(obj.id)+':approved">تأیید</button><button class="btn small danger" data-review="'+type+':'+Number(obj.id)+':rejected">رد</button></div>':"";
+    const button=(state==="pending"&&user?.role==="owner")?'<div class="record-actions"><button class="btn small primary" data-review="'+type+':'+Number(obj.id)+':approved">تأیید</button><button class="btn small danger" data-review="'+type+':'+Number(obj.id)+':rejected">رد</button></div>':(type==="knowledge"&&state==="approved"?'<div class="record-actions"><button class="btn small ghost" data-edit-knowledge="'+Number(obj.id)+'">ویرایش سند / نسخه '+Number(obj.version||1)+'</button></div>':"");
     return '<div class="record"><div class="record-head"><h4>'+title+'</h4>'+chip(statusText[state]||state,state==="approved"?"success":state==="pending"?"warning":"danger")+'</div><p>'+body+'</p><small>'+e(type==="rule"?obj.scope:obj.category)+' · '+e(fmt(obj.created_at))+'</small>'+button+'</div>';
   }
   async function knowledge() {
     const items=await api("/api/knowledge");
+    window.__knowledgeCache=Object.fromEntries(items.map(x=>[x.id,x]));
     txt("#knowledgeCount",items.length+" سند");
     $("#knowledgeList").innerHTML=items.length?items.map(x=>record(x,"knowledge")).join(""):feedEmpty("هیچ سندی ثبت نشده است.");
+    await refreshImports();
   }
+
+  async function refreshImports() {
+    try {
+      const [jobs,docs]=await Promise.all([api("/api/import/jobs"),api("/api/import/documents")]);
+      $("#importJobList").innerHTML=jobs.length?jobs.map(x=>
+        '<div class="record"><div class="record-head"><h4>'+e(x.provider)+'</h4>'+
+        chip(x.state,x.state==="completed"?"success":x.state==="failed"?"danger":"warning")+
+        '</div><small>'+e(fmt(x.created_at))+' · موارد دریافت‌شده: '+Number(x.processed)+'</small>'+
+        (x.error?'<p>'+e(x.error)+'</p>':"")+'</div>').join(""):feedEmpty("هنوز واردسازی شروع نشده.");
+      $("#stagedDocs").innerHTML=docs.length?docs.map(x=>
+        '<div class="record"><div class="record-head"><h4>'+e(x.title)+'</h4>'+
+        chip(statusText[x.status]||x.status,x.status==="approved"?"success":x.status==="pending"?"warning":"")+
+        '</div><small>'+e(x.provider)+" · "+e(x.source_url)+'</small><p>'+e(x.body.slice(0,1100))+
+        (x.body.length>1100?"...":"")+'</p>'+
+        (x.status==="pending"&&user.role==="owner"?
+          '<div class="record-actions"><button class="btn primary small" data-review-import="'+Number(x.id)+':approved">تأیید ورود به حافظه</button>'+
+          '<button class="btn danger small" data-review-import="'+Number(x.id)+':rejected">رد</button></div>':"")+
+        '</div>').join(""):feedEmpty("موردی در صف بررسی نیست.");
+    } catch(err) {notify(err.message,true);}
+  }
+
+  async function showKnowledgeEditor(id) {
+    const doc=window.__knowledgeCache?.[id];
+    if(!doc)return notify("سند انتخاب‌شده موجود نیست",true);
+    const form=$("#knowledgeEditForm");
+    for(const name of ["id","base_version","title","category","body"]){
+      const v=name==="id"?id:name==="base_version"?doc.version:doc[name];
+      form.elements.namedItem(name).value=v;
+    }
+    await loadKnowledgeHistory(id);
+    form.scrollIntoView({behavior:"smooth",block:"center"});
+  }
+
+  async function loadKnowledgeHistory(id) {
+    const result=await api("/api/knowledge/"+id+"/history");
+    $("#revisionList").innerHTML=result.revisions.length?
+      result.revisions.map(r=>
+        '<div class="record"><div class="record-head"><h4>نسخه پیشنهادی '+(Number(r.base_version)+1)+'</h4>'+
+        chip(statusText[r.status]||r.status,r.status==="approved"?"success":r.status==="pending"?"warning":"")+
+        '</div><small>'+e(fmt(r.created_at))+'</small><p>'+e(r.title)+': '+e(r.body.slice(0,400))+'</p>'+
+        (r.status==="pending"&&user.role==="owner"?
+          '<div class="record-actions"><button class="btn primary small" data-review-revision="'+Number(r.id)+':approved">تأیید اصلاح</button>'+
+          '<button class="btn danger small" data-review-revision="'+Number(r.id)+':rejected">رد اصلاح</button></div>':"")+
+        '</div>').join(""):feedEmpty("هنوز ویرایشی ثبت نشده.");
+  }
+
   async function rules() {
     const items=await api("/api/rules");
     txt("#rulesCount",items.length+" قانون");
@@ -155,17 +250,88 @@
     window.__scenarioCache=Object.fromEntries(rows.map(x=>[x.id,x.body]));
   }
   async function security() {
-    const d=await api("/api/settings");
+    const d=await api("/api/integrations");
     const statuses=[
-      ["OpenAI Responses API","تولید متن و سناریو",d.openai_ready],
-      ["Meta Instagram API","دایرکت و کامنت رسمی",d.instagram_ready],
-      ["Human Approval Gate","کنترل انسانی ارسال",true],
-      ["Automatic Live Sending","به‌صورت پیش‌فرض غیرفعال",false]
+      ["OpenAI Responses API","مدل: "+(d.openai.fields.OPENAI_MODEL.value||"تنظیم نشده"),d.openai],
+      ["Meta Instagram API","حساب: @mehradkavir",d.meta]
     ];
-    $("#integrationCards").innerHTML=statuses.map(s=>'<div class="integration-card"><span>◉</span><div><b>'+e(s[0])+'</b><small>'+e(s[1])+'</small></div><em>'+e(s[2]?"آماده":"غیرفعال")+'</em></div>').join("");
+    $("#integrationCards").innerHTML=statuses.map(x=>{
+      const xStatus=x[2].verified?"اتصال آزمایش‌شده":x[2].configured?"تنظیم‌شده، نیازمند تست":"تنظیم نشده";
+      return '<div class="integration-card"><span>◉</span><div><b>'+e(x[0])+'</b><small>'+e(x[1])+'</small></div><em>'+e(xStatus)+'</em></div>';
+    }).join("");
+    const vault=$("#vaultStatus");
+    vault.textContent=d.vault_ready?
+      "صندوق امن فعال است: کلیدهای شما فقط به‌صورت رمزگذاری‌شده ذخیره می‌شوند. مقدار موجود پس از ذخیره قابل مشاهده نیست.":
+      "صندوق رمزنگاری هنوز راه‌اندازی نشده است. فایل نصب جدید START-WINDOWS.bat را اجرا کنید.";
+    vault.classList.toggle("err",!d.vault_ready);
+    const openai=$("#openaiConnectForm");
+    const meta=$("#metaConnectForm");
+    const model=d.openai.fields.OPENAI_MODEL?.value || "gpt-5-mini";
+    if(!openai.querySelector("[name=model]").matches(":focus"))
+      openai.querySelector("[name=model]").value=model;
+    const confId=d.meta.fields.META_IG_USER_ID?.value || "";
+    if(!meta.querySelector("[name=ig_user_id]").matches(":focus"))
+      meta.querySelector("[name=ig_user_id]").value=confId;
+    if(!meta.querySelector("[name=graph_version]").matches(":focus"))
+      meta.querySelector("[name=graph_version]").value=d.meta.fields.META_GRAPH_VERSION?.value || "v25.0";
+    for(const [form,fields] of [[openai,["api_key"]],[meta,["access_token","app_secret","verify_token"]]]){
+      for(const name of fields){
+        const el=form.querySelector('[name="'+name+'"]');
+        const key=({"api_key":"OPENAI_API_KEY","access_token":"META_ACCESS_TOKEN",
+                    "app_secret":"META_APP_SECRET","verify_token":"META_VERIFY_TOKEN"})[name];
+        const configured=name==="api_key"?d.openai.fields[key]?.configured:d.meta.fields[key]?.configured;
+        el.placeholder=configured?"قبلاً ثبت شده؛ برای حفظ مقدار خالی بگذارید":"مقدار جدید را اینجا وارد کنید";
+      }
+    }
+    $("#metaWebhookUrl").value=window.location.origin+"/webhooks/instagram";
+    txt("#openaiTestResult",d.openai.last_test?
+      ("آخرین تست: "+(d.openai.last_test.status==="ok"?"موفق":"ناموفق")+" • "+fmt(d.openai.last_test.checked_at)):"هنوز آزمایش نشده");
+    txt("#metaTestResult",d.meta.last_test?
+      ("آخرین تست حساب: "+(d.meta.last_test.status==="ok"?"موفق":"ناموفق")+" • "+fmt(d.meta.last_test.checked_at)):"حساب هنوز آزمایش نشده");
+    await loadUpdates();
     const audit=await api("/api/audit");
     $("#auditRecords").innerHTML=audit.length?audit.map(x=>'<div class="record"><div class="record-head"><h4>'+e(x.action)+'</h4><small>'+e(fmt(x.created_at))+'</small></div><small>'+e(x.actor)+" · "+e(x.entity)+" #"+e(x.entity_id)+'</small></div>').join(""):feedEmpty("لاگی ثبت نشده است.");
   }
+
+  async function loadUpdates() {
+    const status=$("#updateStatus"), button=$("#updateApproveBtn");
+    button.disabled=true;button.dataset.sha="";
+    try {
+      const r=await api("/api/updates/status");
+      const short=s=>s&&s!=="unknown"?s.slice(0,10):"نامشخص";
+      const state=r.request?.state||"";
+      status.textContent="نسخه نصب‌شده: "+short(r.installed_sha)+" | آخرین نسخه رسمی: "+short(r.latest_sha)+
+        (r.installed_known?(r.available?" | نسخه جدید موجود است.":" | نسخه نصب‌شده به‌روز است."):" | یک‌بار نصب‌کننده را اجرا کنید تا نسخه ثبت شود.")+
+        (state?" | آخرین درخواست: "+state:"");
+      if(r.available && r.installed_known && !["approved","applying"].includes(state)){
+        button.disabled=false;button.dataset.sha=r.latest_sha;
+      }
+    }catch(err){status.textContent="دریافت نسخه GitHub ناموفق بود؛ اتصال اینترنت یا GitHub را بررسی کنید.";button.disabled=true;}
+  }
+
+  async function submitIntegration(provider,form) {
+    const btn=form.querySelector("[type=submit]");btn.disabled=true;
+    try {
+      const payload=getForm(form);
+      const secrets=provider==="openai"?["api_key"]:["access_token","app_secret","verify_token"];
+      for(const name of secrets)if(!payload[name])delete payload[name];
+      await api("/api/integrations/"+provider,{method:"POST",body:payload});
+      for(const name of secrets)form.querySelector('[name="'+name+'"]').value="";
+      notify("تنظیمات با موفقیت به‌صورت رمزگذاری‌شده ثبت شدند. حالا دکمه آزمایش اتصال را بزنید.");
+      await security();
+    }catch(err){notify(err.message,true);}finally{btn.disabled=false;}
+  }
+
+  async function testIntegration(provider,btn) {
+    btn.disabled=true;
+    try{
+      const result=await api("/api/integrations/"+provider+"/test",{method:"POST"});
+      notify(provider==="meta"?"توکن حساب @mehradkavir تأیید شد. وب‌هوک و مجوز پیام‌رسانی هنوز باید بررسی شوند.":"دسترسی OpenAI و مدل انتخابی با موفقیت تأیید شد.");
+      await security();
+    }catch(err){notify("تست اتصال ناموفق: "+err.message,true);await security().catch(()=>{});}
+    finally{btn.disabled=false;}
+  }
+
   async function submitForm(form, endpoint, msg, follow) {
     const button=form.querySelector("[type=submit]"); button.disabled=true;
     try {
@@ -184,6 +350,42 @@
     if(approval){try{await actDraft(Number(approval.dataset.approve||approval.dataset.reject),approval.dataset.approve?"approve":"reject");}catch(err){notify(err.message,true);}return;}
     const reviewButton=ev.target.closest("[data-review]");
     if(reviewButton){const [kind,id,decision]=reviewButton.dataset.review.split(":");try{await review(kind,Number(id),decision);}catch(err){notify(err.message,true);}return;}
+    const editDoc=ev.target.closest("[data-edit-knowledge]");
+    if(editDoc){try{await showKnowledgeEditor(Number(editDoc.dataset.editKnowledge));}catch(err){notify(err.message,true);}return;}
+    const importBtn=ev.target.closest("[data-start-import]");
+    if(importBtn){
+      const provider=importBtn.dataset.startImport;
+      if(!confirm("اطلاعات منبع "+provider+" در صف بررسی ثبت شود؟ هیچ مدرکی بدون تأیید وارد حافظه نمی‌شود."))return;
+      importBtn.disabled=true;
+      try{await api("/api/import/jobs",{method:"POST",body:{provider}});notify("درخواست واردسازی در صف پردازش ثبت شد.");await refreshImports();}
+      catch(err){notify(err.message,true);}finally{importBtn.disabled=false;}
+      return;
+    }
+    const importReview=ev.target.closest("[data-review-import]");
+    if(importReview){
+      const [id,decision]=importReview.dataset.reviewImport.split(":");
+      if(!confirm("وضعیت این سند "+(decision==="approved"?"تأیید":"رد")+" شود؟"))return;
+      try{await api("/api/import/documents/"+id+"/review",{method:"POST",body:{decision}});notify("نتیجه بررسی ذخیره شد.");await knowledge();}
+      catch(err){notify(err.message,true);}
+      return;
+    }
+    const revisionReview=ev.target.closest("[data-review-revision]");
+    if(revisionReview){
+      const [id,decision]=revisionReview.dataset.reviewRevision.split(":");
+      const docId=Number($("#knowledgeEditForm").elements.namedItem("id").value);
+      if(!confirm("اصلاح سند "+(decision==="approved"?"تأیید":"رد")+" شود؟"))return;
+      try{await api("/api/knowledge/revisions/"+id+"/review",{method:"POST",body:{decision}});notify("نسخه بررسی شد.");await knowledge();if(docId)await loadKnowledgeHistory(docId);}
+      catch(err){notify(err.message,true);}
+      return;
+    }
+    const policy=ev.target.closest("[data-toggle-policy]");
+    if(policy){
+      const [id,value]=policy.dataset.togglePolicy.split(":");
+      if(!confirm("وضعیت قانون اتوماسیون تغییر کند؟"))return;
+      try{await api("/api/automation/policies/"+id+"/toggle",{method:"POST",body:{enabled:value==="true"}});notify("وضعیت سیاست ثبت شد.");await automation();}
+      catch(err){notify(err.message,true);}
+      return;
+    }
     const archive=ev.target.closest("[data-scenario]");
     if(archive){lastScenario=window.__scenarioCache?.[archive.dataset.scenario]||"";txt("#scenarioOutput",lastScenario);$("#scenarioOutput").classList.remove("empty");$("#copyScenario").disabled=!lastScenario;}
   });
@@ -191,6 +393,26 @@
   $("#logoutBtn").addEventListener("click",async()=>{try{await api("/api/auth/logout",{method:"POST"});}catch{}csrf="";user=null;showLogin();});
   $("#refreshBtn").addEventListener("click",refreshCurrent);$("#inboxRefresh").addEventListener("click",refreshCurrent);
   $("#demoForm").addEventListener("submit",ev=>{ev.preventDefault();submitForm(ev.target,"/api/demo/message","پیام در صف پردازش ثبت شد",async result=>{selectedThread=result.thread_id;await inbox();});});
+  $("#leadForm").addEventListener("submit",ev=>{ev.preventDefault();submitForm(ev.target,"/api/leads","درخواست در CRM ثبت شد.");});
+  $("#autoPolicyForm").addEventListener("submit",ev=>{ev.preventDefault();submitForm(ev.target,"/api/automation/policies","قانون ذخیره شد و به‌صورت پیش‌فرض خاموش است.");});
+  document.addEventListener("change",async ev=>{
+    const input=ev.target.closest("[data-lead-stage]");
+    if(!input)return;
+    try{await api("/api/leads/"+Number(input.dataset.leadStage)+"/stage",
+      {method:"POST",body:{stage:input.value}});notify("مرحله استعلام ثبت شد.");await crm();}
+    catch(err){notify(err.message,true);await crm();}
+  });
+  $("#knowledgeEditForm").addEventListener("submit",async ev=>{
+    ev.preventDefault();
+    const form=ev.target,data=getForm(form),id=Number(data.id);
+    if(!id)return notify("ابتدا یک سند تأییدشده را انتخاب کنید.",true);
+    const btn=form.querySelector("[type=submit]");btn.disabled=true;
+    try{
+      await api("/api/knowledge/"+id+"/revisions",{method:"POST",
+        body:{base_version:Number(data.base_version),title:data.title,body:data.body,category:data.category}});
+      notify("ویرایش در صف تأیید مدیر ثبت شد.");await knowledge();await loadKnowledgeHistory(id);
+    }catch(err){notify(err.message,true);}finally{btn.disabled=false;}
+  });
   $("#knowledgeForm").addEventListener("submit",ev=>{ev.preventDefault();submitForm(ev.target,"/api/knowledge","سند پیشنهادی ثبت شد.");});
   $("#feedbackForm").addEventListener("submit",async ev=>{
     ev.preventDefault();
@@ -210,6 +432,39 @@
   });
   $("#ruleForm").addEventListener("submit",ev=>{ev.preventDefault();submitForm(ev.target,"/api/rules","قانون پیشنهادی ثبت شد.");});
   $("#scenarioForm").addEventListener("submit",async ev=>{ev.preventDefault();const form=ev.target; const btn=form.querySelector("[type=submit]");btn.disabled=true;txt("#scenarioOutput","در حال پردازش توسط موتور محتوا…");try{const r=await api("/api/scenarios",{method:"POST",body:getForm(form)});lastScenario=r.body;txt("#scenarioOutput",r.body);$("#scenarioOutput").classList.remove("empty");$("#copyScenario").disabled=false;notify(r.generated_by==="openai"?"سناریو تولید شد.":"قالب آزمایشی ساخته شد؛ اتصال مدل را بررسی کنید.");await scenarios();}catch(err){notify(err.message,true);}finally{btn.disabled=false;}});
+  $("#updateCheckBtn").addEventListener("click",async ev=>{
+    ev.target.disabled=true;
+    try{await api("/api/updates/check",{method:"POST"});await loadUpdates();notify("آخرین تغییرات GitHub بررسی شدند.");}
+    catch(err){notify(err.message,true);}finally{ev.target.disabled=false;}
+  });
+  $("#updateApproveBtn").addEventListener("click",async ev=>{
+    const btn=ev.target,sha=btn.dataset.sha;
+    if(!/^[a-f0-9]{40}$/.test(sha))return;
+    if(!confirm("این نسخه رسمی GitHub را برای نصب روی همین سیستم تأیید می‌کنی؟ پیش از نصب از پایگاه داده نسخه پشتیبان گرفته می‌شود."))return;
+    btn.disabled=true;
+    try{
+      const r=await api("/api/updates/approve",{method:"POST",body:{sha}});
+      notify("آپدیت تأیید و در صف عامل محلی قرار گرفت. تا پایان نصب وضعیت سرویس را بررسی کنید.");
+      await loadUpdates();
+    }catch(err){notify(err.message,true);await loadUpdates();}
+  });
+  $("#openaiConnectForm").addEventListener("submit",ev=>{ev.preventDefault();submitIntegration("openai",ev.target);});
+  $("#metaConnectForm").addEventListener("submit",ev=>{ev.preventDefault();submitIntegration("meta",ev.target);});
+  document.addEventListener("click",async ev=>{
+    const tester=ev.target.closest("[data-test-integration]");
+    if(tester){await testIntegration(tester.dataset.testIntegration,tester);return;}
+    const disc=ev.target.closest("[data-disconnect-integration]");
+    if(disc){
+      const provider=disc.dataset.disconnectIntegration;
+      if(!window.confirm("اتصال "+provider+" را قطع می‌کنید؟ توکن ثبت‌شده در صندوق امن خالی خواهد شد."))return;
+      disc.disabled=true;
+      try{
+        await api("/api/integrations/"+provider+"/disconnect",{method:"POST"});
+        notify("اتصال قطع شد. برای ابطال کامل، توکن را در سرویس اصلی هم لغو کنید.");
+        await security();
+      }catch(err){notify(err.message,true);}finally{disc.disabled=false;}
+    }
+  });
   $("#passwordForm").addEventListener("submit",async ev=>{
     ev.preventDefault();
     const form=ev.target, btn=form.querySelector("[type=submit]");
@@ -223,5 +478,6 @@
   function tick(){txt("#clock",new Intl.DateTimeFormat("fa-IR",{weekday:"short",day:"numeric",month:"short"}).format(new Date()));}
   tick();setInterval(tick,60_000);
   setInterval(()=>{if(user && activePage==="inbox")inbox().catch(()=>{});},12_000);
+  setInterval(()=>{if(user&&activePage==="security")loadUpdates().catch(()=>{});},90000);
   bootstrap();
 })();

@@ -88,7 +88,7 @@ def call_model(instructions, input_text, schema, name):
         return None
     import httpx
     request = {
-        "model": settings.OPENAI_MODEL,
+        "model": settings.effective('OPENAI_MODEL'),
         "instructions": instructions,
         "input": input_text[:13000],
         "store": False,
@@ -97,7 +97,7 @@ def call_model(instructions, input_text, schema, name):
     }
     with httpx.Client(timeout=35) as client:
         response = client.post("https://api.openai.com/v1/responses", json=request,
-            headers={"Authorization":f"Bearer {settings.OPENAI_API_KEY}","Content-Type":"application/json"})
+            headers={"Authorization":f"Bearer {settings.effective('OPENAI_API_KEY')}","Content-Type":"application/json"})
         response.raise_for_status()
         data = response.json()
     if data.get("status") not in (None, "completed"):

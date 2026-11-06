@@ -25,6 +25,16 @@ def run_once():
         message_id=int(row["id"])
         con.execute("UPDATE messages SET status='processing',processed_at=?,attempts=attempts+1 WHERE id=?",(db.now(),message_id))
     try:
+        from .automation import try_greeting
+        auto_result=try_greeting(message_id)
+        if auto_result=="already_attempted":
+            with db.tx() as con:
+                con.execute("UPDATE messages SET status='failed',processed_at=? WHERE id=?",
+                            (db.now(),message_id))
+                db.audit(con,"worker","auto_reply_requires_reconciliation","messages",message_id)
+            return True
+        if auto_result in ("sent","uncertain"):
+            return True
         decision=create_reply(row["body"])
         with db.tx() as con:
             con.execute(
@@ -38,12 +48,38 @@ def run_once():
             con.execute("UPDATE messages SET status=CASE WHEN attempts>=3 THEN 'failed' ELSE 'new' END WHERE id=?",(message_id,))
     return True
 
+def run_import_once():
+    """Safely process one bounded, owner-authorized import request."""
+    from .importers import run_import_job
+    with db.tx() as con:
+        row=con.execute("SELECT id,provider FROM import_jobs WHERE state='queued' ORDER BY id LIMIT 1").fetchone()
+        if not row:return False
+        job_id,provider=int(row["id"]),row["provider"]
+        con.execute("UPDATE import_jobs SET state='processing',started_at=? WHERE id=?",(db.now(),job_id))
+        db.audit(con,"worker","import_started","import_jobs",job_id,{"provider":provider})
+    try:
+        count=run_import_job(job_id,provider)
+        with db.tx() as con:
+            con.execute("UPDATE import_jobs SET state='completed',processed=?,finished_at=?,error=NULL WHERE id=?",
+                        (count,db.now(),job_id))
+            db.audit(con,"worker","import_completed","import_jobs",job_id,
+                     {"provider":provider,"staged":count})
+    except Exception as exc:
+        log.exception("Import failed: job=%s provider=%s",job_id,provider)
+        with db.tx() as con:
+            con.execute("UPDATE import_jobs SET state='failed',error=?,finished_at=? WHERE id=?",
+                        (str(exc)[:280],db.now(),job_id))
+            db.audit(con,"worker","import_failed","import_jobs",job_id,{"provider":provider})
+    return True
+
 def main():
     db.init_db()
     log.info("Worker started")
     while True:
         try:
-            if not run_once():
+            did_import=run_import_once()
+            did_reply=run_once()
+            if not did_import and not did_reply:
                 time.sleep(2)
         except Exception:
             log.exception("Worker loop error")

@@ -121,6 +121,8 @@ def init_db():
     schema_db = connect()
     try:
         schema_db.executescript(SCHEMA)
+        from .extensions import ensure_schema
+        ensure_schema(schema_db)
     finally:
         schema_db.close()
     with tx() as db:

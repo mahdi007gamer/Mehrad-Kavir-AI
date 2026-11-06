@@ -37,7 +37,9 @@
       <nav id="nav">
         <button class="nav-link active" data-page="dashboard"><span>◈</span> نمای کلی</button>
         <button class="nav-link" data-page="inbox"><span>✉</span> صندوق هوشمند <em id="navPending">0</em></button>
-        <button class="nav-link" data-page="insights"><span>▤</span> تحلیل پیج <em>نقشه راه</em></button>
+        <button class="nav-link" data-page="insights"><span>▤</span> تحلیل پیج</button>
+        <button class="nav-link" data-page="crm"><span>◧</span> مدیریت استعلام‌ها</button>
+        <button class="nav-link" data-page="automation"><span>⚙</span> پاسخ‌های خودکار</button>
         <button class="nav-link" data-page="knowledge"><span>▦</span> دانش برند</button>
         <button class="nav-link" data-page="memory"><span>◇</span> حافظه و یادگیری</button>
         <button class="nav-link" data-page="content"><span>✧</span> استودیو محتوا</button>
@@ -84,17 +86,17 @@
         </div>
       </section>
       <section class="page" id="page-insights">
-        <div class="page-head"><div><span class="eyebrow">GROWTH INTELLIGENCE · ROADMAP</span><h1>تحلیل هوشمند اینستاگرام<span class="accent">.</span></h1><p>ساختار ماژول رشد پیج مهراد کویر — در انتظار اتصال رسمی Insights.</p></div></div>
+        <div class="page-head"><div><span class="eyebrow">GROWTH INTELLIGENCE · ROADMAP</span><h1>تحلیل هوشمند اینستاگرام<span class="accent">.</span></h1><p>نمایش شاخص‌های دریافت‌شده از API رسمی؛ مقدار ناموجود هرگز با صفر جایگزین نمی‌شود.</p></div></div>
         <div class="panel insights-banner">
           <div class="panel-title"><h3>وضعیت اتصال تحلیلی</h3><span class="chip warning">هنوز فعال نشده</span></div>
-          <p id="insightsStatus" class="muted">اتصال رسمی آمار Instagram Insights هنوز پیاده‌سازی نشده است. هیچ عدد فرضی یا ساختگی نشان داده نمی‌شود.</p>
-          <div class="notice">مرحله بعدی: اتصال مجاز به Meta Insights، ذخیره Snapshot های معتبر و نمایش KPI واقعی همراه منبع و زمان آخرین به‌روزرسانی.</div>
+          <p id="insightsStatus" class="muted">برای نمایش آمار معتبر، ابتدا اتصال Meta را در بخش امنیت انجام دهید و سپس دریافت Insights را اجرا کنید.</p>
+          <div class="notice">دریافت اطلاعات از Meta ممکن است برای بعضی شاخص‌ها یا مجوزها ناموفق باشد. داده ناموجود با «—» نمایش داده می‌شود، نه صفر.</div>
         </div>
         <div class="stat-grid">
-          <div class="stat"><div class="stat-icon">◉</div><p>Views</p><strong>—</strong><small>در انتظار داده واقعی</small></div>
-          <div class="stat"><div class="stat-icon">◎</div><p>Reach</p><strong>—</strong><small>در انتظار داده واقعی</small></div>
-          <div class="stat"><div class="stat-icon">✧</div><p>Engagement Rate</p><strong>—</strong><small>محاسبه پس از دریافت Reach معتبر</small></div>
-          <div class="stat"><div class="stat-icon">✉</div><p>سرنخ واجد شرایط</p><strong>—</strong><small>نیازمند اتصال قیف استعلام</small></div>
+          <div class="stat"><div class="stat-icon">◉</div><p>Views</p><strong id="igViews">—</strong><small>آخرین Snapshot معتبر</small></div>
+          <div class="stat"><div class="stat-icon">◎</div><p>Reach</p><strong id="igReach">—</strong><small>آخرین Snapshot معتبر</small></div>
+          <div class="stat"><div class="stat-icon">✧</div><p>Engagement Rate</p><strong id="igEngagement">—</strong><small>در صورت وجود Reach و تعامل</small></div>
+          <div class="stat"><div class="stat-icon">✉</div><p>سرنخ واجد شرایط</p><strong id="igQualifiedLeads">—</strong><small>از CRM واقعی سیستم</small></div>
         </div>
         <div class="columns">
           <div class="panel">
@@ -116,6 +118,11 @@
           <h3>قانون شفافیت داده‌ها</h3>
           <p class="muted">عدد خالی یعنی هنوز داده قابل استناد نداریم؛ صفر یعنی داده واقعی با مقدار صفر دریافت شده است. هر KPI در نسخه عملیاتی باید منبع، زمان دریافت، نوع و وضعیت دسترسی داشته باشد.</p>
         </div>
+        <div class="panel">
+          <div class="panel-title"><h3>پست‌ها و ریلزهای شناسایی‌شده</h3><button class="btn ghost" type="button" data-start-import="instagram_insights">↻ بروزرسانی آمار رسمی</button></div>
+          <p class="micro">ابتدا از «دانش برند» فهرست رسانه‌ها را دریافت کنید؛ سپس دریافت Insights را اجرا کنید. نتایج با زمان ثبت‌شده ذخیره می‌شوند.</p>
+          <div id="igMediaList" class="records"></div>
+        </div>
       </section>
       <section class="page" id="page-inbox">
         <div class="page-head"><div><span class="eyebrow">SMART COMMUNICATION</span><h1>صندوق پیام هوشمند<span class="accent">.</span></h1><p>بررسی پیشنهادها، اصلاح پاسخ و ارسال فقط پس از تأیید.</p></div><button class="btn ghost" id="inboxRefresh">↻ دریافت جدید</button></div>
@@ -133,6 +140,47 @@
           <p class="micro">پردازش پیش‌نویس توسط Worker انجام می‌شود؛ برای مشاهده نتیجه کمی بعد صندوق را تازه‌سازی کنید.</p>
         </div>
       </section>
+      <section class="page" id="page-crm">
+        <div class="page-head"><div><span class="eyebrow">SOLAR RFQ PIPELINE</span><h1>مدیریت استعلام‌های سازه<span class="accent">.</span></h1><p>ثبت سرنخ‌های واقعی و ارجاع به کارشناس مهندسی؛ بدون اعلام قیمت یا محاسبات ساختگی.</p></div></div>
+        <div class="columns">
+          <div class="panel">
+            <h3>ثبت درخواست جدید</h3>
+            <form class="stack" id="leadForm">
+              <label>نام متقاضی / پروژه</label><input name="name" minlength="2" maxlength="120" required placeholder="نام مشتری یا نام پروژه">
+              <label>شهر پروژه</label><input name="project_city" maxlength="120" placeholder="مثلاً: قم">
+              <label>ظرفیت نیروگاه (مگاوات)</label><input name="capacity_mw" type="number" min="0" max="100000" step="0.001" placeholder="3">
+              <label>نوع فونداسیون</label><input name="foundation" maxlength="100" placeholder="کوبشی / بتنی / نامشخص">
+              <label>آرایش پنل‌ها</label><input name="panel_layout" maxlength="150" placeholder="مثلاً 2×14 یا نامشخص">
+              <label>تلفن تماس</label><input name="phone" maxlength="60" placeholder="اختیاری">
+              <label>توضیحات</label><textarea name="details" rows="4" maxlength="2500"></textarea>
+              <button class="btn primary" type="submit">ثبت سرنخ فروش</button>
+            </form>
+          </div>
+          <div class="panel">
+            <div class="panel-title"><h3>قیف استعلام و پیگیری</h3><span class="chip">CRM</span></div>
+            <div id="leadsList" class="records"></div>
+          </div>
+        </div>
+      </section>
+      <section class="page" id="page-automation">
+        <div class="page-head"><div><span class="eyebrow">CONTROLLED AUTOMATION</span><h1>پاسخ‌گویی ایمن<span class="accent">.</span></h1><p>قوانین کاملاً محدود برای سلام و احوالپرسی؛ متن آزاد AI بدون تأیید مدیر ارسال نمی‌شود.</p></div></div>
+        <div class="columns">
+          <div class="panel">
+            <h3>ساخت قانون پاسخ ثابت</h3>
+            <div id="autoPolicyStatus" class="notice">در حال بررسی کلید توقف اضطراری سرور...</div>
+            <form id="autoPolicyForm" class="stack">
+              <label>عبارت دقیق</label>
+              <select name="keyword"><option value="سلام">سلام</option><option value="درود">درود</option><option value="وقت بخیر">وقت بخیر</option><option value="صبح بخیر">صبح بخیر</option><option value="شب بخیر">شب بخیر</option></select>
+              <label>پاسخ رسمی تأییدشده</label>
+              <textarea name="template" minlength="15" maxlength="320" required rows="4" placeholder="سلام، به مهراد کویر خوش آمدید. برای مشاوره سازه خورشیدی، مشخصات پروژه را بفرمایید."></textarea>
+              <button type="submit" class="btn primary">ثبت قانون (در ابتدا خاموش)</button>
+            </form>
+          </div>
+          <div class="panel"><h3>قوانین اتوماسیون</h3><div id="autoPoliciesList" class="records"></div>
+            <div class="notice">بدون اتصال تأییدشده Meta، فعال‌سازی سمت سرور و آزمون عملیاتی، ارسال خودکار اجرا نمی‌شود.</div>
+          </div>
+        </div>
+      </section>
       <section class="page" id="page-knowledge">
         <div class="page-head"><div><span class="eyebrow">VERIFIED KNOWLEDGE</span><h1>پایگاه دانش برند<span class="accent">.</span></h1><p>تنها اسناد تأییدشده وارد زمینه پاسخ‌گویی هوش مصنوعی می‌شوند.</p></div></div>
         <div class="columns knowledge-grid">
@@ -143,6 +191,33 @@
             <button class="btn primary" type="submit">ثبت برای تأیید مدیر</button></form>
           </div>
           <div class="panel"><div class="panel-title"><h3>اسناد ثبت‌شده</h3><small id="knowledgeCount">—</small></div><div id="knowledgeList" class="records"></div></div>
+        </div>
+        <div class="columns">
+          <div class="panel">
+            <div class="panel-title"><h3>ویرایش و نسخه‌بندی اسناد</h3><span class="chip">با تأیید مالک</span></div>
+            <p class="muted">یک سند تأییدشده را از فهرست بالا انتخاب کنید؛ تغییرات ابتدا در انتظار تأیید قرار می‌گیرند و متن فعلی بدون تأیید تغییر نمی‌کند.</p>
+            <form class="stack" id="knowledgeEditForm">
+              <input name="id" type="hidden">
+              <input name="base_version" type="hidden">
+              <label>عنوان سند</label><input name="title" minlength="4" maxlength="150" required>
+              <label>دسته‌بندی</label><select name="category"><option value="brand">هویت برند</option><option value="engineering">مهندسی</option><option value="sales">فروش</option><option value="faq">پرسش‌ها</option><option value="policy">سیاست سازمان</option><option value="content">محتوا</option><option value="other">سایر</option></select>
+              <label>محتوا</label><textarea rows="8" name="body" minlength="20" maxlength="10000" required></textarea>
+              <button class="btn primary" type="submit">ثبت نسخه جدید برای تأیید</button>
+            </form>
+            <div id="revisionList" class="records" style="margin-top:14px"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-title"><h3>واردکردن دانش از منابع رسمی</h3><span class="chip">Review First</span></div>
+            <p class="muted">مطالب سایت mehradkavir.com و کپشن‌های مجاز حساب @mehradkavir ابتدا در صف بررسی قرار می‌گیرند؛ هیچ متن استخراج‌شده‌ای خودکار وارد مغز سیستم نمی‌شود.</p>
+            <div class="button-row">
+              <button class="btn ghost" type="button" data-start-import="website">بررسی صفحات وب‌سایت</button>
+              <button class="btn ghost" type="button" data-start-import="instagram_media">واردکردن کپشن‌های اینستاگرام</button>
+              <button class="btn ghost" type="button" data-start-import="instagram_insights">دریافت Insights مجاز</button>
+            </div>
+            <h3 style="margin-top:20px">وضعیت دریافت منابع</h3><div id="importJobList" class="records"></div>
+            <h3 style="margin-top:20px">اسناد در انتظار بررسی</h3><div id="stagedDocs" class="records"></div>
+            <div class="notice">در صورت محدودیت robots.txt یا مجوز Meta، خطای واقعی ثبت می‌شود و داده نامعتبر جایگزین نمی‌شود.</div>
+          </div>
         </div>
       </section>
       <section class="page" id="page-memory">
@@ -185,9 +260,46 @@
         <div class="panel"><div class="panel-title"><h3>آرشیو سناریوها</h3><span class="subtle">قابل بازیابی</span></div><div id="scenarioList" class="records scenario-list"></div></div>
       </section>
       <section class="page" id="page-security">
-        <div class="page-head"><div><span class="eyebrow">SECURITY & GOVERNANCE</span><h1>امنیت و اتصالات<span class="accent">.</span></h1><p>وضعیت سرویس‌ها و تاریخچه اقدامات حساس.</p></div></div>
+        <div class="page-head"><div><span class="eyebrow">SECURITY & GOVERNANCE</span><h1>امنیت و اتصالات<span class="accent">.</span></h1><p>مدیریت امن OpenAI و Meta، آزمایش اتصال، کنترل خودکارسازی و تاریخچه عملیات.</p></div></div>
         <div class="columns">
-          <div class="panel"><h3>یکپارچه‌سازی سرویس‌ها</h3><div id="integrationCards"></div><div class="notice">کلیدهای OpenAI و Meta فقط از طریق متغیرهای محیطی سرور تعریف می‌شوند و هرگز در پنل قابل خواندن نیستند.</div>
+          <div class="panel integration-manager">
+            <div class="panel-title"><h3>مرکز اتصال سرویس‌ها</h3><span class="chip">OWNER ONLY</span></div>
+            <div id="integrationCards"></div>
+            <div id="vaultStatus" class="notice">در حال بررسی صندوق رمزنگاری‌شده...</div>
+
+            <form id="openaiConnectForm" class="stack integration-form">
+              <div class="provider-heading"><span class="provider-mark">✧</span><div><b>OpenAI — مغز هوش مصنوعی</b><small>تولید سناریو، تحلیل بازخورد و پاسخ تخصصی</small></div></div>
+              <label>کلید OpenAI API (فقط روی سرور رمزنگاری می‌شود)</label>
+              <input type="password" name="api_key" autocomplete="new-password" maxlength="300" placeholder="sk-... / خالی بگذارید تا کلید موجود حفظ شود">
+              <label>شناسه مدل</label>
+              <input type="text" name="model" minlength="2" maxlength="80" value="gpt-5-mini" required dir="ltr" placeholder="gpt-5-mini">
+              <div class="button-row"><button type="submit" class="btn primary">ذخیره تنظیمات OpenAI</button>
+              <button type="button" class="btn ghost" data-test-integration="openai">آزمایش اتصال</button>
+              <button type="button" class="btn danger" data-disconnect-integration="openai">قطع اتصال</button></div>
+              <p id="openaiTestResult" class="micro"></p>
+            </form>
+            <form id="metaConnectForm" class="stack integration-form">
+              <div class="provider-heading"><span class="provider-mark">◎</span><div><b>Instagram / Meta</b><small>اتصال رسمی حساب @mehradkavir</small></div></div>
+              <div class="notice">این بخش برای ثبت توکن رسمی Meta است. احراز هویت OAuth خودکار هنوز ساخته نشده و برای دریافت توکن باید از Meta Developer استفاده کنید.</div>
+              <label>Instagram User ID (شناسه عددی حساب حرفه‌ای)</label>
+              <input name="ig_user_id" type="text" required pattern="[0-9]{4,35}" maxlength="35" inputmode="numeric" dir="ltr" placeholder="Professional account ID">
+              <label>Access Token</label>
+              <input name="access_token" type="password" autocomplete="new-password" maxlength="3000" placeholder="برای حفظ توکن فعلی خالی بگذارید">
+              <label>Meta App Secret</label>
+              <input name="app_secret" type="password" autocomplete="new-password" maxlength="300" placeholder="برای حفظ مقدار موجود خالی بگذارید">
+              <label>Webhook Verify Token</label>
+              <input name="verify_token" type="password" autocomplete="new-password" maxlength="300" placeholder="مقدار انتخابی خودتان / برای حفظ مقدار قبلی خالی بگذارید">
+              <label>نسخه Graph API</label>
+              <input name="graph_version" type="text" value="v25.0" required pattern="v[0-9]{1,2}\.[0-9]{1,2}" maxlength="12" dir="ltr">
+              <label>Webhook Callback</label>
+              <input type="text" id="metaWebhookUrl" readonly dir="ltr" value="/webhooks/instagram">
+              <div class="button-row"><button type="submit" class="btn primary">ذخیره تنظیمات Meta</button>
+              <button type="button" class="btn ghost" data-test-integration="meta">آزمایش حساب</button>
+              <button type="button" class="btn danger" data-disconnect-integration="meta">قطع اتصال</button></div>
+              <p id="metaTestResult" class="micro"></p>
+              <p class="micro"><a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer">Meta Developer Apps</a> · اتصال تنها پس از تأیید سطح دسترسی، وب‌هوک و تست واقعی آماده پاسخ‌گویی خواهد بود.</p>
+            </form>
+            <div class="notice">هیچ کلید ذخیره‌شده‌ای دوباره از API به مرورگر برنمی‌گردد؛ وضعیت اتصال و نام حساب فقط پس از اعتبارسنجی نشان داده می‌شود.</div>
             <form id="passwordForm" class="stack" style="margin-top:24px">
               <h3>تغییر رمز حساب</h3>
               <label>رمز فعلی</label>
@@ -196,10 +308,22 @@
               <input type="password" name="new_password" minlength="16" maxlength="200" autocomplete="new-password" required>
               <button type="submit" class="btn ghost">تغییر رمز و خروج از تمام نشست‌ها</button>
             </form></div>
-          <div class="panel"><h3>ردپای حسابرسی</h3><div id="auditRecords" class="records"></div></div>
+          <div class="security-side">
+            <div class="panel">
+              <div class="panel-title"><h3>به‌روزرسانی هوشمند سیستم</h3><span class="chip">GitHub Official</span></div>
+              <p class="muted">بررسی نسخه رسمی بدون نصب خودکار؛ اجرا فقط بعد از تأیید مدیر اصلی.</p>
+              <div id="updateStatus" class="notice">وضعیت بروزرسانی در حال بررسی است...</div>
+              <div class="button-row"><button id="updateCheckBtn" class="btn ghost" type="button">↻ بررسی آپدیت جدید</button>
+              <button id="updateApproveBtn" class="btn primary" type="button" disabled>تأیید و اجرای نسخه جدید</button></div>
+              <div class="micro">برای اجرای خودکار روی ویندوز، نصب‌کننده باید عامل محلی آپدیت را راه‌اندازی کرده باشد؛ برنامه هیچ دسترسی مستقیم به Docker Socket ندارد.</div>
+            </div>
+            <div class="panel">
+              <h3>ردپای حسابرسی</h3><div id="auditRecords" class="records"></div>
+            </div>
+          </div>
         </div>
       </section>
-      <footer>MEHRAD KAVIR AI · VERSION 0.1.0 · PRIVACY-FIRST · HUMAN APPROVAL REQUIRED</footer>
+      <footer>MEHRAD KAVIR AI · VERSION 0.2.0 · PRIVACY-FIRST · HUMAN APPROVAL REQUIRED</footer>
     </main>
   </div>
 </body>
