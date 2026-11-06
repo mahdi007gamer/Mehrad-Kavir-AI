@@ -27,7 +27,13 @@ def run_once():
     try:
         from .automation import try_greeting
         auto_result=try_greeting(message_id)
-        if auto_result in ("sent","uncertain","already_attempted"):
+        if auto_result=="already_attempted":
+            with db.tx() as con:
+                con.execute("UPDATE messages SET status='failed',processed_at=? WHERE id=?",
+                            (db.now(),message_id))
+                db.audit(con,"worker","auto_reply_requires_reconciliation","messages",message_id)
+            return True
+        if auto_result in ("sent","uncertain"):
             return True
         decision=create_reply(row["body"])
         with db.tx() as con:
