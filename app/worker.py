@@ -25,6 +25,10 @@ def run_once():
         message_id=int(row["id"])
         con.execute("UPDATE messages SET status='processing',processed_at=?,attempts=attempts+1 WHERE id=?",(db.now(),message_id))
     try:
+        from .automation import try_greeting
+        auto_result=try_greeting(message_id)
+        if auto_result in ("sent","uncertain","already_attempted"):
+            return True
         decision=create_reply(row["body"])
         with db.tx() as con:
             con.execute(
