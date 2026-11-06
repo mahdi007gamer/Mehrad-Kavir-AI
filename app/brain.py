@@ -66,22 +66,55 @@ def route(text):
         return "engineering"
     return "support"
 
+STOPWORDS={"سلام","برای","لطفا","لطفاً","میشه","می‌شود","شدن","کردن",
+           "دارم","دارید","هست","است","این","اون","یک","چند","باید","چه",
+           "ما","شما","و","که","در","به","از","با","را","یا","هم","نیاز"}
+
+def _tokens(text):
+    return {
+        word for word in re.findall(r"[\wآ-ی]{3,}",text.lower().replace("ي","ی").replace("ك","ک"))
+        if word not in STOPWORDS
+    }
+
 def retrieve(text, specialty="support"):
-    words = set(re.findall(r"[\wآ-ی]{3,}", text.lower()))
+    """Rank approved local knowledge, avoiding irrelevant documents on large packs."""
+    weights={
+      "sales":{"sales":7,"faq":5,"brand":2,"policy":2,"engineering":1},
+      "engineering":{"engineering":7,"faq":4,"policy":2,"brand":1},
+      "support":{"faq":7,"sales":3,"policy":3,"brand":1},
+      "content":{"content":7,"brand":4,"engineering":2,"policy":2},
+      "compliance":{"policy":9,"brand":2},
+    }
+    words=_tokens(text)
     with db.read() as con:
-        docs = [dict(x) for x in con.execute("SELECT id,title,body FROM knowledge WHERE status='approved'").fetchall()]
-        rules = [dict(x) for x in con.execute(
-            "SELECT id,title,instruction FROM rules WHERE status='approved' AND scope IN ('global',?) ORDER BY id DESC LIMIT 18",
-            (specialty,)).fetchall()]
-    ranked = sorted(docs, key=lambda d:len(words.intersection(set(re.findall(r"[\wآ-ی]{3,}", (d["title"]+" "+d["body"]).lower())))), reverse=True)
-    chosen, budget = [], settings.MAX_KNOWLEDGE_CHARS
-    for x in ranked[:8]:
-        body = x["body"][:2400]
-        if len(body)>budget: continue
-        chosen.append({"id":x["id"],"title":x["title"],"body":body})
-        budget -= len(body)
-    instructions = [f'{x["title"]}: {x["instruction"][:900]}' for x in rules]
-    return chosen, instructions
+        docs=[dict(x) for x in con.execute(
+          "SELECT id,title,body,category,source_type FROM knowledge WHERE status='approved'"
+        ).fetchall()]
+        rules=[dict(x) for x in con.execute(
+          "SELECT id,title,instruction FROM rules WHERE status='approved' "
+          "AND scope IN ('global',?) ORDER BY id DESC LIMIT 18",
+          (specialty,)).fetchall()]
+    scored=[]
+    for doc in docs:
+        title_hits=len(words & _tokens(doc["title"]))
+        body_hits=len(words & _tokens(doc["body"]))
+        category_weight=weights.get(specialty,{}).get(doc["category"],0)
+        score=title_hits*7 + body_hits*2 + (category_weight if (title_hits or body_hits) else 0)
+        # Keep a narrowly applicable source even if the text is very short.
+        if score:
+            scored.append((score,doc))
+    scored.sort(key=lambda x:(-x[0],x[1]["id"]))
+    chosen=[]
+    budget=settings.MAX_KNOWLEDGE_CHARS
+    for _,doc in scored[:10]:
+        body=doc["body"][:2050]
+        if len(body)>budget:continue
+        chosen.append({"id":doc["id"],"title":doc["title"],"body":body,
+                       "origin":doc["source_type"]})
+        budget-=len(body)
+    # No matched document is safer than inventing an unrelated policy source.
+    instructions=[f'{x["title"]}: {x["instruction"][:900]}' for x in rules]
+    return chosen,instructions
 
 def call_model(instructions, input_text, schema, name):
     if not settings.ai_ready():
