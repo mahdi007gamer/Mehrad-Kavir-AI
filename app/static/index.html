@@ -113,7 +113,18 @@
       <section class="page" id="page-memory">
         <div class="page-head"><div><span class="eyebrow">GOVERNED LEARNING</span><h1>حافظه و یادگیری<span class="accent">.</span></h1><p>بازخوردهای خود را به قوانین قابل بررسی و نسخه‌بندی تبدیل کنید.</p></div></div>
         <div class="columns knowledge-grid">
-          <div class="panel"><h3>پیشنهاد یک قانون جدید</h3><form id="ruleForm" class="stack">
+          <div class="panel"><h3>تحلیل هوشمند بازخورد</h3>
+            <form id="feedbackForm" class="stack">
+              <label>نقد، اصلاح یا خواسته جدیدت را بنویس</label>
+              <textarea name="feedback" rows="4" minlength="12" maxlength="1800" required placeholder="مثلاً هوک این سناریو ضعیف بود؛ شروع باید با یک اتفاق تصویری در سه ثانیه اول باشد."></textarea>
+              <label>کارشناس مربوطه</label>
+              <select name="scope"><option value="content">محتوا</option><option value="sales">فروش</option><option value="engineering">مهندسی</option><option value="support">پشتیبانی</option><option value="global">همه بخش‌ها</option></select>
+              <button class="btn ghost" type="submit">✧ تحلیل نقد و پیشنهاد قانون</button>
+            </form>
+            <div id="feedbackResult" class="notice hidden"></div>
+            <div class="side-divider"></div>
+            <h3>پیشنهاد دستی قانون</h3>
+            <form id="ruleForm" class="stack">
             <label>عنوان</label><input name="title" placeholder="مثلاً: ساخت هوک‌های تصویری" minlength="4" maxlength="150" required>
             <label>بخش تخصصی</label><select name="scope"><option value="global">تمام نقش‌ها</option><option value="sales">فروش</option><option value="engineering">مهندسی</option><option value="support">پشتیبانی</option><option value="content">محتوا</option></select>
             <label>اصلاح یا اصل یادگرفته‌شده</label><textarea name="instruction" rows="6" minlength="10" maxlength="1500" required placeholder="مثلاً: شروع هر ریلز با یک صحنه بصری قابل اجرا و چالش مرتبط با مخاطب باشد..."></textarea>
