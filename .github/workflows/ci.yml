@@ -21,3 +21,43 @@ jobs:
         run: node --check app/static/app.js
       - name: Run functional and security tests
         run: python -m pytest -q
+  windows-installer:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Windows PowerShell 5.1 syntax
+        shell: powershell
+        run: |
+          $files = @("scripts/setup.ps1", "scripts/host-update-agent.ps1")
+          foreach ($file in $files) {
+            $tokens = $null
+            $parseErrors = $null
+            $fullPath = (Resolve-Path -LiteralPath $file).Path
+            [System.Management.Automation.Language.Parser]::ParseFile($fullPath, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            if ($parseErrors.Count -gt 0) {
+              foreach ($err in $parseErrors) {
+                Write-Host ("{0}: {1}" -f $file, $err.Message)
+              }
+              exit 1
+            }
+          }
+      - name: Smoke-test first install and idempotent rerun without Docker
+        shell: powershell
+        run: |
+          & .\scripts\setup.ps1 -SkipDocker -SkipUpdateAgent
+          if ($LASTEXITCODE -ne 0) { throw "Installer smoke test failed" }
+          $envPath = Join-Path $PWD ".env"
+          if (-not (Test-Path $envPath)) { throw "Installer did not create .env" }
+          $before = [System.IO.File]::ReadAllText($envPath)
+          if ($before -notmatch '(?m)^VAULT_ENCRYPTION_KEY=[A-Za-z0-9_-]{43}=\r?$') {
+            throw "Installer did not create a valid private encryption key"
+          }
+          if ($before -notmatch '(?m)^BOOTSTRAP_ADMIN_PASSWORD=[a-f0-9]{48}\r?$') {
+            throw "Installer did not create a strong administrator credential"
+          }
+          & .\scripts\setup.ps1 -SkipDocker -SkipUpdateAgent
+          $after = [System.IO.File]::ReadAllText($envPath)
+          if ($before -cne $after) { throw "Existing secrets or settings changed on rerun" }
+          Write-Host "Windows installer verified: valid PowerShell, .env generated, secrets preserved."
