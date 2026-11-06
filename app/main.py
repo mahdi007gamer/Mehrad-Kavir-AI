@@ -3,6 +3,7 @@ import hmac
 import json
 import logging
 import secrets
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
@@ -17,14 +18,15 @@ from .meta import send_reply
 
 log = logging.getLogger("mkai")
 STATIC = Path(__file__).parent / "static"
-app = FastAPI(title="Mehrad Kavir AI", docs_url=None, redoc_url=None, openapi_url=None)
+@asynccontextmanager
+async def lifespan(_app):
+    db.init_db()
+    yield
+
+app = FastAPI(title="Mehrad Kavir AI", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=str(STATIC)), name="static")
 EDITOR = role_required("owner","editor")
 OWNER = role_required("owner")
-
-@app.on_event("startup")
-def startup():
-    db.init_db()
 
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
