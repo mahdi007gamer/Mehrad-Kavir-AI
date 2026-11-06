@@ -3,6 +3,7 @@ import hmac
 import json
 import logging
 import secrets
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
@@ -11,20 +12,21 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from . import db, settings
-from .security import COOKIE_NAME, create_session, token_hash, user_for, role_required, verify_password, verify_webhook
-from .brain import create_scenario, create_reply
+from .security import COOKIE_NAME, create_session, token_hash, user_for, role_required, verify_password, verify_webhook, hash_password
+from .brain import create_scenario, create_reply, propose_feedback_rule
 from .meta import send_reply
 
 log = logging.getLogger("mkai")
 STATIC = Path(__file__).parent / "static"
-app = FastAPI(title="Mehrad Kavir AI", docs_url=None, redoc_url=None, openapi_url=None)
+@asynccontextmanager
+async def lifespan(_app):
+    db.init_db()
+    yield
+
+app = FastAPI(title="Mehrad Kavir AI", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=str(STATIC)), name="static")
 EDITOR = role_required("owner","editor")
 OWNER = role_required("owner")
-
-@app.on_event("startup")
-def startup():
-    db.init_db()
 
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
@@ -88,6 +90,25 @@ def logout(request:Request,response:Response,user=Depends(user_for)):
     response.delete_cookie(COOKIE_NAME,path="/")
     return {"ok":True}
 
+class PasswordChange(BaseModel):
+    current_password: str = Field(min_length=1,max_length=200)
+    new_password: str = Field(min_length=16,max_length=200)
+
+@app.post("/api/account/password")
+def change_password(data:PasswordChange, response:Response,user=Depends(user_for)):
+    if data.current_password == data.new_password:
+        raise HTTPException(422,"Choose a new password")
+    with db.tx() as con:
+        row=con.execute("SELECT password_hash FROM users WHERE id=?",(user["id"],)).fetchone()
+        if not row or not verify_password(data.current_password,row["password_hash"]):
+            raise HTTPException(403,"Current password is incorrect")
+        con.execute("UPDATE users SET password_hash=? WHERE id=?",(hash_password(data.new_password),user["id"]))
+        # Revoke all sessions, including the current browser, after password change.
+        con.execute("DELETE FROM sessions WHERE user_id=?",(user["id"],))
+        db.audit(con,user["id"],"password_changed","users",user["id"])
+    response.delete_cookie(COOKIE_NAME,path="/")
+    return {"changed":True,"relogin_required":True}
+
 @app.get("/api/dashboard")
 def dashboard(user=Depends(user_for)):
     with db.read() as con:
@@ -146,6 +167,28 @@ class RuleIn(BaseModel):
     title:str=Field(min_length=4,max_length=150)
     instruction:str=Field(min_length=10,max_length=1500)
     scope:Literal["global","sales","engineering","support","content"]="global"
+
+class FeedbackIn(BaseModel):
+    feedback: str = Field(min_length=12,max_length=1800)
+    scope: Literal["global","sales","engineering","support","content"]="content"
+
+@app.post("/api/feedback/propose")
+def analyze_feedback(data:FeedbackIn,user=Depends(EDITOR)):
+    if not settings.ai_ready():
+        raise HTTPException(409,"Connect OPENAI_API_KEY to analyze feedback; manual rules remain available")
+    try:
+        proposal=propose_feedback_rule(data.feedback,data.scope)
+    except Exception:
+        raise HTTPException(502,"Feedback analysis unavailable; please use manual rule proposal")
+    if proposal["needs_clarification"]:
+        return proposal
+    with db.tx() as con:
+        cur=con.execute(
+            "INSERT INTO rules(title,instruction,scope,status,created_by,created_at) VALUES(?,?,?,'pending',?,?)",
+            (proposal["title"],proposal["instruction"],data.scope,user["id"],db.now()))
+        db.audit(con,user["id"],"ai_feedback_proposed","rules",cur.lastrowid,{"scope":data.scope})
+        return {"needs_clarification":False,"id":cur.lastrowid,"status":"pending",
+                "title":proposal["title"],"instruction":proposal["instruction"]}
 
 @app.get("/api/rules")
 def list_rules(user=Depends(user_for)):

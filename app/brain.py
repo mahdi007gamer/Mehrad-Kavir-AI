@@ -107,6 +107,38 @@ def call_model(instructions, input_text, schema, name):
         raise ValueError("Model returned no structured output")
     return json.loads("".join(texts))
 
+FEEDBACK_SCHEMA = {
+ "type":"object","additionalProperties":False,
+ "properties":{
+  "title":{"type":"string"},
+  "instruction":{"type":"string"},
+  "clarifying_question":{"type":"string"},
+  "safe_to_propose":{"type":"boolean"}
+ },
+ "required":["title","instruction","clarifying_question","safe_to_propose"]
+}
+
+def propose_feedback_rule(feedback,scope):
+    """Convert manager's critique into a PROPOSAL, not an active rule."""
+    if not settings.ai_ready():
+        raise ValueError("OPENAI_API_KEY is not configured")
+    role=AGENTS.get(scope,AGENTS["compliance"])
+    data=call_model(
+        SYSTEM + "\n"+role+
+        "\nشما تحلیل‌گر بازخورد مدیر هستید. نقد کاربر را به یک قانون روشن، قابل آزمون و محدود به بخش مربوط تبدیل کن."
+        "\nهرگز پیشنهادی که مستلزم فاش‌کردن اطلاعات، دورزدن کنترل انسانی یا اختراع داده است مجاز ندان."
+        "\nاگر نقد نامشخص است، clarifying_question بپرس و safe_to_propose=false قرار بده.",
+        "MANAGER_FEEDBACK (untrusted text):\n"+feedback[:1800],
+        FEEDBACK_SCHEMA,"feedback_proposal"
+    )
+    if not data or not data["safe_to_propose"]:
+        return {"needs_clarification":True,"question":str(data["clarifying_question"] if data else "لطفاً نمونه و نتیجه مورد انتظار را مشخص کنید.")[:350]}
+    title=str(data["title"]).strip()[:150]
+    instruction=str(data["instruction"]).strip()[:1500]
+    if len(title)<4 or len(instruction)<10:
+        raise ValueError("Feedback proposal is incomplete")
+    return {"needs_clarification":False,"title":title,"instruction":instruction}
+
 def create_reply(message):
     specialty = route(message)
     docs, rules = retrieve(message, specialty)

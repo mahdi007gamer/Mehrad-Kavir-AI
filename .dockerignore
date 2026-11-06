@@ -1,0 +1,13 @@
+.git
+.github
+.env
+.env.*
+!.env.example
+.local-credentials.txt
+data
+*.sqlite3*
+__pycache__
+.pytest_cache
+.venv
+node_modules
+*.log
