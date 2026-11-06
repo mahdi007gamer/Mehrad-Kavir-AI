@@ -144,6 +144,33 @@
           </div>
           <div class="panel"><div class="panel-title"><h3>اسناد ثبت‌شده</h3><small id="knowledgeCount">—</small></div><div id="knowledgeList" class="records"></div></div>
         </div>
+        <div class="columns">
+          <div class="panel">
+            <div class="panel-title"><h3>ویرایش و نسخه‌بندی اسناد</h3><span class="chip">با تأیید مالک</span></div>
+            <p class="muted">یک سند تأییدشده را از فهرست بالا انتخاب کنید؛ تغییرات ابتدا در انتظار تأیید قرار می‌گیرند و متن فعلی بدون تأیید تغییر نمی‌کند.</p>
+            <form class="stack" id="knowledgeEditForm">
+              <input name="id" type="hidden">
+              <input name="base_version" type="hidden">
+              <label>عنوان سند</label><input name="title" minlength="4" maxlength="150" required>
+              <label>دسته‌بندی</label><select name="category"><option value="brand">هویت برند</option><option value="engineering">مهندسی</option><option value="sales">فروش</option><option value="faq">پرسش‌ها</option><option value="policy">سیاست سازمان</option><option value="content">محتوا</option><option value="other">سایر</option></select>
+              <label>محتوا</label><textarea rows="8" name="body" minlength="20" maxlength="10000" required></textarea>
+              <button class="btn primary" type="submit">ثبت نسخه جدید برای تأیید</button>
+            </form>
+            <div id="revisionList" class="records" style="margin-top:14px"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-title"><h3>واردکردن دانش از منابع رسمی</h3><span class="chip">Review First</span></div>
+            <p class="muted">مطالب سایت mehradkavir.com و کپشن‌های مجاز حساب @mehradkavir ابتدا در صف بررسی قرار می‌گیرند؛ هیچ متن استخراج‌شده‌ای خودکار وارد مغز سیستم نمی‌شود.</p>
+            <div class="button-row">
+              <button class="btn ghost" type="button" data-start-import="website">بررسی صفحات وب‌سایت</button>
+              <button class="btn ghost" type="button" data-start-import="instagram_media">واردکردن کپشن‌های اینستاگرام</button>
+              <button class="btn ghost" type="button" data-start-import="instagram_insights">دریافت Insights مجاز</button>
+            </div>
+            <h3 style="margin-top:20px">وضعیت دریافت منابع</h3><div id="importJobList" class="records"></div>
+            <h3 style="margin-top:20px">اسناد در انتظار بررسی</h3><div id="stagedDocs" class="records"></div>
+            <div class="notice">در صورت محدودیت robots.txt یا مجوز Meta، خطای واقعی ثبت می‌شود و داده نامعتبر جایگزین نمی‌شود.</div>
+          </div>
+        </div>
       </section>
       <section class="page" id="page-memory">
         <div class="page-head"><div><span class="eyebrow">GOVERNED LEARNING</span><h1>حافظه و یادگیری<span class="accent">.</span></h1><p>بازخوردهای خود را به قوانین قابل بررسی و نسخه‌بندی تبدیل کنید.</p></div></div>
