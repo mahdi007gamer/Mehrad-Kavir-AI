@@ -46,3 +46,16 @@ footer{text-align:center;color:#4d6686;font-size:10px;letter-spacing:1px;directi
 .button-row .btn{white-space:normal}
 #vaultStatus.err{border-right-color:#ff7287;background:rgba(255,114,135,.08);color:#ffcbd4}
 @media(max-width:650px){.integration-form{padding:14px}.button-row .btn{flex:1 1 130px}}
+
+/* Voice command center v0.3 — brand-specific, mobile-first */
+.voice-preview-player{width:100%;margin-top:15px;background:#0E1D2F;border-radius:12px;border:1px solid rgba(174,184,194,.2)}
+.checkbox-row{display:flex;gap:10px;align-items:center;margin-top:8px;color:#d5e9ff;cursor:pointer}
+.checkbox-row input[type=checkbox]{width:18px;height:18px;flex:none;accent-color:#006FFE}
+.call-transcript{white-space:pre-wrap;overflow-wrap:anywhere;max-height:320px;overflow:auto;background:#101A28;color:#C9D9EF;border-radius:10px;padding:14px}
+#phoneProposalDetails details{padding:12px 0}
+#phoneProposalDetails summary{font-size:12px;color:#7EC4FF;cursor:pointer}
+#phoneProposalDetails .health-row b{max-width:65%;overflow-wrap:anywhere;text-align:left;white-space:normal}
+#phoneStatus{margin-bottom:15px}
+#page-phone .panel{margin-bottom:15px}
+#page-phone .panel-title{flex-wrap:wrap}
+#page-phone .button-row{gap:10px}
