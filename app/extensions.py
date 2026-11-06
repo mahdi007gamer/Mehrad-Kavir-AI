@@ -78,6 +78,13 @@ CREATE TABLE IF NOT EXISTS auto_policies (
  enabled INTEGER NOT NULL DEFAULT 0 CHECK(enabled IN (0,1)),
  created_by INTEGER REFERENCES users(id), created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS auto_attempts (
+ message_id INTEGER PRIMARY KEY REFERENCES messages(id),
+ policy_id INTEGER NOT NULL REFERENCES auto_policies(id),
+ state TEXT NOT NULL CHECK(state IN ('reserved','sent','uncertain')),
+ reply_id TEXT, attempted_at TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_auto_attempts ON auto_attempts(state,updated_at);
 CREATE TABLE IF NOT EXISTS auto_sent (
  id INTEGER PRIMARY KEY, message_id INTEGER UNIQUE NOT NULL REFERENCES messages(id),
  policy_id INTEGER NOT NULL REFERENCES auto_policies(id),
